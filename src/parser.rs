@@ -1,4 +1,4 @@
-use crate::ast::{self, ClassName};
+use crate::ast;
 use anyhow::Result;
 use pest::iterators::{Pair, Pairs};
 use pest::Parser;
@@ -247,7 +247,19 @@ fn parse_term(pair: Pair<Rule>) -> Result<ast::Term> {
                             _ => unreachable!() // ?
                         }
                     }
-                    Rule::dot_chain => todo!(),
+                    Rule::dot_chain => {
+                        let pair = pair.into_inner().next().unwrap();
+                        match pair.as_rule() {
+                            // TODO: this is probably not completly correct
+                            Rule::method_call => Some(
+                                ReduceTermAcc::Partial(parse_method_call(pair))
+                            ),
+                            Rule::field_access => Some(
+                                ReduceTermAcc::Partial(parse_field_access(pair))
+                            ),
+                            _ => unreachable!(),
+                        }
+                    },
                     _ => unreachable!(),
                 });
             match folded {
@@ -285,11 +297,11 @@ fn parse_cast(pair: Pair<Rule>) -> ast::Cast {
             // FIXME: nested parse term unwrap unnecessary
             let term = parse_term(pairs.next().unwrap()).unwrap();
             ast::Cast {
-                to_class_name: ClassName(to_class_name.into()),
-                term: term.boxed()
+                to_class_name: ast::ClassName(to_class_name.into()),
+                term: term.boxed(),
             }
         }
-        _ => unreachable!()
+        _ => unreachable!(),
     }
 }
 
@@ -305,9 +317,42 @@ fn parse_new_call(pair: Pair<Rule>) -> ast::NewCall {
                 .collect();
             ast::NewCall {
                 class_name: ast::ClassName(class_name.into()),
-                arg_terms
+                arg_terms,
             }
         }
-        _ => unreachable!()
+        _ => unreachable!(),
+    }
+}
+
+fn parse_field_access(pair: Pair<Rule>) -> PartialTerm {
+    println!("parse_new_call {:#?}", &pair);
+    match pair.as_rule() {
+        Rule::field_access => {
+            let mut pairs = pair.into_inner();
+            let field = pairs.next().unwrap().as_str();
+            PartialTerm::FieldAccess {
+                field: ast::FieldName(field.into()),
+            }
+        }
+        _ => unreachable!(),
+    }
+}
+
+fn parse_method_call(pair: Pair<Rule>) -> PartialTerm {
+    println!("parse_method_call {:#?}", &pair);
+    match pair.as_rule() {
+        Rule::method_call => {
+            let mut pairs = pair.into_inner();
+            let method_name = pairs.next().unwrap().as_str();
+            // FIXME: nested parse term unwrap unnecessary
+            let arg_terms = pairs
+                .map(|pair| parse_term(pair).unwrap().boxed())
+                .collect();
+            PartialTerm::MethodCall {
+                method_name: ast::MethodName(method_name.into()),
+                arg_terms,
+            }
+        }
+        _ => unreachable!(),
     }
 }
