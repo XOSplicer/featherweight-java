@@ -18,10 +18,11 @@ fn main() {
                 this.fst=fst;
                 this.snd=snd;
             }
-
+/*
             Pair setfst(Object newfst) {
                 return new Pair(newfst, this.snd);
             }
+*/
         }
     ").expect("parsing failed");
     println!("AST {:#?}", &ast);

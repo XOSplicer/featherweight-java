@@ -13,6 +13,8 @@ pub fn parse(input: &str) -> Result<ast::Ast> {
     parse_program(program)
 }
 
+// TODO: parse_* can ommit the usage of Result<_>
+
 fn parse_program(pairs: Pairs<Rule>) -> Result<ast::Ast> {
     println!("parse_program {:#?}", &pairs);
     let class_definitions = pairs
@@ -185,9 +187,114 @@ fn parse_term(pair: Pair<Rule>) -> Result<ast::Term> {
     println!("parse_term {:#?}", &pair);
     Ok(match pair.as_rule() {
         Rule::term => {
-            let mut pairs = pair.into_inner();
-            todo!()
+            let pairs = pair.into_inner();
+            let folded =
+                // flat pair list to left-assiciative terms
+                pairs.rfold::<Option<ReduceTermAcc>, _>(None, |acc, pair| match pair.as_rule() {
+                    Rule::term_left => {
+                        let pair = pair.into_inner().next().unwrap();
+                        // TODO: invert matching of acc and pair
+                        match acc {
+                            None => {
+                                let term: ast::Term = match pair.as_rule() {
+                                    Rule::term => parse_term(pair).unwrap(),
+                                    Rule::cast => parse_cast(pair).into_term(),
+                                    Rule::new_call => parse_new_call(pair).into_term(),
+                                    Rule::ident => ast::Term::from_variable_str(pair.as_str()),
+                                    _ => unreachable!()
+                                };
+                                Some(ReduceTermAcc::Full(term))
+                            },
+                            Some(ReduceTermAcc::Partial(PartialTerm::FieldAccess {
+                                field,
+                            })) => {
+                                let term: ast::Term = match pair.as_rule() {
+                                    Rule::term => parse_term(pair).unwrap(),
+                                    Rule::cast => parse_cast(pair).into_term(),
+                                    Rule::new_call => parse_new_call(pair).into_term(),
+                                    Rule::ident => ast::Term::from_variable_str(pair.as_str()),
+                                    _ => unreachable!()
+                                };
+                                Some(ReduceTermAcc::Full(
+                                    ast::FieldAccess {
+                                        object_term: term.boxed(),
+                                        field,
+                                    }
+                                    .into_term()
+                                ))
+
+                            },
+                            Some(ReduceTermAcc::Partial(PartialTerm::MethodCall {
+                                method_name,
+                                arg_terms,
+                            })) => {
+                                let term: ast::Term = match pair.as_rule() {
+                                    Rule::term => parse_term(pair).unwrap(),
+                                    Rule::cast => parse_cast(pair).into_term(),
+                                    Rule::new_call => parse_new_call(pair).into_term(),
+                                    Rule::ident => ast::Term::from_variable_str(pair.as_str()),
+                                    _ => unreachable!()
+                                };
+                                Some(ReduceTermAcc::Full(
+                                    ast::MethodCall {
+                                        object_term: term.boxed(),
+                                        method_name,
+                                        arg_terms,
+                                    }
+                                    .into_term(),
+                                ))
+                            },
+                            _ => unreachable!() // ?
+                        }
+                    }
+                    Rule::dot_chain => todo!(),
+                    _ => unreachable!(),
+                });
+            match folded {
+                Some(ReduceTermAcc::Full(term)) => term,
+                _ => unreachable!(),
+            }
         }
         _ => unreachable!(),
     })
+}
+
+/// Term builder for right to left reduction
+/// where the left subterm of each rule is missing
+enum PartialTerm {
+    FieldAccess {
+        field: ast::FieldName,
+    },
+    MethodCall {
+        method_name: ast::MethodName,
+        arg_terms: Vec<Box<ast::Term>>,
+    },
+}
+
+enum ReduceTermAcc {
+    Partial(PartialTerm),
+    Full(ast::Term),
+}
+
+fn parse_cast(pair: Pair<Rule>) -> ast::Cast {
+    todo!()
+}
+
+fn parse_new_call(pair: Pair<Rule>) -> ast::NewCall {
+    println!("parse_new_call {:#?}", &pair);
+    match pair.as_rule() {
+        Rule::new_call => {
+            let mut pairs = pair.into_inner();
+            let class_name = pairs.next().unwrap().as_str();
+            // FIXME: nested parse term unwrap unnecessary
+            let arg_terms = pairs
+                .map(|pair| parse_term(pair).unwrap().boxed())
+                .collect();
+            ast::NewCall {
+                class_name: ast::ClassName(class_name.into()),
+                arg_terms
+            }
+        }
+        _ => unreachable!()
+    }
 }
