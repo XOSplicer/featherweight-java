@@ -1,4 +1,4 @@
-use crate::ast;
+use crate::ast::{self, ClassName};
 use anyhow::Result;
 use pest::iterators::{Pair, Pairs};
 use pest::Parser;
@@ -277,7 +277,20 @@ enum ReduceTermAcc {
 }
 
 fn parse_cast(pair: Pair<Rule>) -> ast::Cast {
-    todo!()
+    println!("parse_cast {:#?}", &pair);
+    match pair.as_rule() {
+        Rule::cast => {
+            let mut pairs = pair.into_inner();
+            let to_class_name = pairs.next().unwrap().as_str();
+            // FIXME: nested parse term unwrap unnecessary
+            let term = parse_term(pairs.next().unwrap()).unwrap();
+            ast::Cast {
+                to_class_name: ClassName(to_class_name.into()),
+                term: term.boxed()
+            }
+        }
+        _ => unreachable!()
+    }
 }
 
 fn parse_new_call(pair: Pair<Rule>) -> ast::NewCall {
