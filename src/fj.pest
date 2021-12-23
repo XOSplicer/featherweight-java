@@ -1,0 +1,91 @@
+WHITESPACE = _{ " " | WHITE_SPACE | NEWLINE }
+COMMENT = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+
+ident = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
+
+program = _{
+    SOI ~ class_definition+ ~ EOI
+}
+
+class_definition = {
+    "class" ~ ident ~ "extends" ~ ident ~ "{"
+    ~ field_definition*
+    ~ constructor
+    ~ method_definition*
+    ~ "}"
+}
+
+field_definition = {
+    ident ~ ident ~ ";"
+}
+
+constructor = {
+    ident ~ "(" ~ arg_list? ~ ")" ~ "{"
+    ~ super_call
+    ~ assignment*
+    ~ "}"
+}
+
+super_call = _{
+    "super" ~ "(" ~ field_list? ~ ")" ~ ";"
+}
+
+assignment = {
+    "this" ~ "." ~ ident ~ "=" ~ ident ~ ";"
+}
+
+arg_list = {
+    ident ~ ident ~ ("," ~ ident ~ ident)* ~ ","?
+}
+
+method_definition = {
+    ident ~ ident ~ "(" ~ arg_list? ~ ")" ~ "{"
+    ~ "return" ~ term ~ ";"
+    ~ "}"
+}
+
+// NOTE: left recursion removed from term
+term = {
+    term_left ~ dot_chain*
+}
+
+term_left = {
+      "(" ~ term ~ ")"
+    | cast
+    | new_call
+    | ident
+}
+
+dot_chain = {
+    method_call
+    | field_access
+}
+
+field_access = {
+    "." ~ ident
+}
+
+method_call = {
+"." ~ ident ~ "(" ~ term_list? ~ ")"
+}
+
+cast = {
+    "(" ~ ident ~ ")" ~ term
+}
+
+new_call = {
+    "new" ~ ident ~ "(" ~ term_list? ~ ")"
+}
+
+term_list = {
+    term ~ ("," ~ term)* ~ ","?
+}
+
+field_list = {
+    ident ~ ("," ~ ident)* ~ ","?
+}
+
+
+
+
+
