@@ -43,4 +43,40 @@ impl ClassTable {
             ) as Box<_>
         })
     }
+
+    pub fn method_type(
+        &self,
+        method_name: &MethodName,
+        class_name: &ClassName,
+    ) -> Option<MethodType> {
+        self.inner().get(class_name).and_then(|class| {
+            match class
+                .methods
+                .iter()
+                .find(|method| &method.method_name == method_name)
+            {
+                Some(method) => Some(MethodType::from_method(method)),
+                None => self.method_type(method_name, self.super_type(class_name).unwrap()),
+            }
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct MethodType {
+    pub arg_types: Vec<ClassName>,
+    pub ret_type: ClassName,
+}
+
+impl MethodType {
+    pub fn from_method(method: &MethodDefinition) -> Self {
+        MethodType {
+            arg_types: method
+                .args
+                .iter()
+                .map(|(class_name, _)| class_name.clone())
+                .collect(),
+            ret_type: method.return_type.clone(),
+        }
+    }
 }

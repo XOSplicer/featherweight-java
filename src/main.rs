@@ -15,4 +15,6 @@ fn main() {
         .unwrap()
         .collect::<Vec<_>>();
     println!("fields of `Triple`: {:?}", &triple_fields);
+    let mtype_triple_setfst = ct.method_type(&ast::MethodName("setfst".into()), &ast::ClassName("Triple".into()));
+    println!("type of of `Triple::setfst`: {:?}", &mtype_triple_setfst);
 }
