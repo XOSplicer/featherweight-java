@@ -169,7 +169,6 @@ fn parse_method_definition(pair: Pair<Rule>) -> Result<ast::MethodDefinition> {
                 .clone()
                 .find(|pair| pair.as_rule() == Rule::term)
                 .map(parse_term)
-                .transpose()?
                 .unwrap()
                 .boxed();
             ast::MethodDefinition {
@@ -183,109 +182,49 @@ fn parse_method_definition(pair: Pair<Rule>) -> Result<ast::MethodDefinition> {
     })
 }
 
-fn parse_term(pair: Pair<Rule>) -> Result<ast::Term> {
-    println!("parse_term {:#?}", &pair);
-    Ok(match pair.as_rule() {
+fn parse_term(pair: Pair<Rule>) -> ast::Term {
+    println!("parse_term_left {:#?}", &pair);
+    match pair.as_rule() {
         Rule::term => {
-            let pairs = pair.into_inner();
-            let folded =
-                // flat pair list to left-assiciative terms
-                pairs.rfold::<Option<ReduceTermAcc>, _>(None, |acc, pair| match pair.as_rule() {
-                    Rule::term_left => {
-                        let pair = pair.into_inner().next().unwrap();
-                        // TODO: invert matching of acc and pair
-                        match acc {
-                            None => {
-                                let term: ast::Term = match pair.as_rule() {
-                                    Rule::term => parse_term(pair).unwrap(),
-                                    Rule::cast => parse_cast(pair).into_term(),
-                                    Rule::new_call => parse_new_call(pair).into_term(),
-                                    Rule::ident => ast::Term::from_variable_str(pair.as_str()),
-                                    _ => unreachable!()
-                                };
-                                Some(ReduceTermAcc::Full(term))
-                            },
-                            Some(ReduceTermAcc::Partial(PartialTerm::FieldAccess {
-                                field,
-                            })) => {
-                                let term: ast::Term = match pair.as_rule() {
-                                    Rule::term => parse_term(pair).unwrap(),
-                                    Rule::cast => parse_cast(pair).into_term(),
-                                    Rule::new_call => parse_new_call(pair).into_term(),
-                                    Rule::ident => ast::Term::from_variable_str(pair.as_str()),
-                                    _ => unreachable!()
-                                };
-                                Some(ReduceTermAcc::Full(
-                                    ast::FieldAccess {
-                                        object_term: term.boxed(),
-                                        field,
-                                    }
-                                    .into_term()
-                                ))
+            let mut pairs = pair.into_inner();
+            let term_left = parse_term_left(pairs.next().unwrap());
+            // build tree of following, left-associative terms, from left to right
+            pairs.fold(term_left, |left_term, pair| match pair.as_rule() {
+                Rule::dot_chain => {
+                    let pair = pair.into_inner().next().unwrap();
+                    match pair.as_rule() {
+                        Rule::method_call => {
+                            parse_method_call(pair).into_full(left_term).into_term()
+                        }
 
-                            },
-                            Some(ReduceTermAcc::Partial(PartialTerm::MethodCall {
-                                method_name,
-                                arg_terms,
-                            })) => {
-                                let term: ast::Term = match pair.as_rule() {
-                                    Rule::term => parse_term(pair).unwrap(),
-                                    Rule::cast => parse_cast(pair).into_term(),
-                                    Rule::new_call => parse_new_call(pair).into_term(),
-                                    Rule::ident => ast::Term::from_variable_str(pair.as_str()),
-                                    _ => unreachable!()
-                                };
-                                Some(ReduceTermAcc::Full(
-                                    ast::MethodCall {
-                                        object_term: term.boxed(),
-                                        method_name,
-                                        arg_terms,
-                                    }
-                                    .into_term(),
-                                ))
-                            },
-                            _ => unreachable!() // ?
+                        Rule::field_access => {
+                            parse_field_access(pair).into_full(left_term).into_term()
                         }
+                        _ => unreachable!(),
                     }
-                    Rule::dot_chain => {
-                        let pair = pair.into_inner().next().unwrap();
-                        match pair.as_rule() {
-                            // TODO: this is probably not completly correct
-                            Rule::method_call => Some(
-                                ReduceTermAcc::Partial(parse_method_call(pair))
-                            ),
-                            Rule::field_access => Some(
-                                ReduceTermAcc::Partial(parse_field_access(pair))
-                            ),
-                            _ => unreachable!(),
-                        }
-                    },
-                    _ => unreachable!(),
-                });
-            match folded {
-                Some(ReduceTermAcc::Full(term)) => term,
+                }
+                _ => unreachable!(),
+            })
+        }
+        _ => unreachable!(),
+    }
+}
+
+fn parse_term_left(pair: Pair<Rule>) -> ast::Term {
+    println!("parse_term_left {:#?}", &pair);
+    match pair.as_rule() {
+        Rule::term_left => {
+            let pair = pair.into_inner().next().unwrap();
+            match pair.as_rule() {
+                Rule::term => parse_term(pair),
+                Rule::cast => parse_cast(pair).into_term(),
+                Rule::new_call => parse_new_call(pair).into_term(),
+                Rule::ident => ast::Term::from_variable_str(pair.as_str()),
                 _ => unreachable!(),
             }
         }
         _ => unreachable!(),
-    })
-}
-
-/// Term builder for right to left reduction
-/// where the left subterm of each rule is missing
-enum PartialTerm {
-    FieldAccess {
-        field: ast::FieldName,
-    },
-    MethodCall {
-        method_name: ast::MethodName,
-        arg_terms: Vec<Box<ast::Term>>,
-    },
-}
-
-enum ReduceTermAcc {
-    Partial(PartialTerm),
-    Full(ast::Term),
+    }
 }
 
 fn parse_cast(pair: Pair<Rule>) -> ast::Cast {
@@ -294,8 +233,7 @@ fn parse_cast(pair: Pair<Rule>) -> ast::Cast {
         Rule::cast => {
             let mut pairs = pair.into_inner();
             let to_class_name = pairs.next().unwrap().as_str();
-            // FIXME: nested parse term unwrap unnecessary
-            let term = parse_term(pairs.next().unwrap()).unwrap();
+            let term = parse_term(pairs.next().unwrap());
             ast::Cast {
                 to_class_name: ast::ClassName(to_class_name.into()),
                 term: term.boxed(),
@@ -311,10 +249,7 @@ fn parse_new_call(pair: Pair<Rule>) -> ast::NewCall {
         Rule::new_call => {
             let mut pairs = pair.into_inner();
             let class_name = pairs.next().unwrap().as_str();
-            // FIXME: nested parse term unwrap unnecessary
-            let arg_terms = pairs
-                .map(|pair| parse_term(pair).unwrap().boxed())
-                .collect();
+            let arg_terms = pairs.map(|pair| parse_term(pair).boxed()).collect();
             ast::NewCall {
                 class_name: ast::ClassName(class_name.into()),
                 arg_terms,
@@ -324,13 +259,26 @@ fn parse_new_call(pair: Pair<Rule>) -> ast::NewCall {
     }
 }
 
-fn parse_field_access(pair: Pair<Rule>) -> PartialTerm {
-    println!("parse_new_call {:#?}", &pair);
+struct PartialFieldAccess {
+    field: ast::FieldName,
+}
+
+impl PartialFieldAccess {
+    fn into_full(self, object_term: ast::Term) -> ast::FieldAccess {
+        ast::FieldAccess {
+            field: self.field,
+            object_term: object_term.boxed(),
+        }
+    }
+}
+
+fn parse_field_access(pair: Pair<Rule>) -> PartialFieldAccess {
+    println!("parse_field_access {:#?}", &pair);
     match pair.as_rule() {
         Rule::field_access => {
             let mut pairs = pair.into_inner();
             let field = pairs.next().unwrap().as_str();
-            PartialTerm::FieldAccess {
+            PartialFieldAccess {
                 field: ast::FieldName(field.into()),
             }
         }
@@ -338,17 +286,29 @@ fn parse_field_access(pair: Pair<Rule>) -> PartialTerm {
     }
 }
 
-fn parse_method_call(pair: Pair<Rule>) -> PartialTerm {
+struct PartialMethodCall {
+    method_name: ast::MethodName,
+    arg_terms: Vec<Box<ast::Term>>,
+}
+
+impl PartialMethodCall {
+    fn into_full(self, object_term: ast::Term) -> ast::MethodCall {
+        ast::MethodCall {
+            object_term: object_term.boxed(),
+            arg_terms: self.arg_terms,
+            method_name: self.method_name,
+        }
+    }
+}
+
+fn parse_method_call(pair: Pair<Rule>) -> PartialMethodCall {
     println!("parse_method_call {:#?}", &pair);
     match pair.as_rule() {
         Rule::method_call => {
             let mut pairs = pair.into_inner();
             let method_name = pairs.next().unwrap().as_str();
-            // FIXME: nested parse term unwrap unnecessary
-            let arg_terms = pairs
-                .map(|pair| parse_term(pair).unwrap().boxed())
-                .collect();
-            PartialTerm::MethodCall {
+            let arg_terms = pairs.map(|pair| parse_term(pair).boxed()).collect();
+            PartialMethodCall {
                 method_name: ast::MethodName(method_name.into()),
                 arg_terms,
             }

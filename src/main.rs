@@ -37,6 +37,9 @@ fn main() {
             Pair left_setfst(Object n) {
                 return this.left_pair.setfst(n);
             }
+            Object left_setfst_snd(Object n) {
+                return this.left_pair.setfst(n).snd;
+            }
         }
     ").expect("parsing failed");
     println!("AST {:#?}", &ast);
