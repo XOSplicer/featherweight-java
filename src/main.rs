@@ -2,45 +2,17 @@
 
 mod ast;
 mod parser;
+mod semantic;
 
 fn main() {
-    let ast = parser::parse("
-        class A extends Object { A() { super(); } }
-
-        class B extends Object { B() { super(); } }
-
-        class Pair extends Object {
-            Object fst;
-            Object snd;
-
-            Pair(Object fst, Object snd) {
-                super();
-                this.fst=fst;
-                this.snd=snd;
-            }
-            Pair setfst(Object newfst) {
-                return new Pair(newfst, this.snd);
-            }
-        }
-
-        class D extends Object {
-            Pair left_pair;
-            Pair right_pair;
-            D(Pair left_pair, Pair right_pair) {
-                super();
-                this.left_pair=left_pair;
-                this.right_pair=right_pair;
-            }
-            Object leftmost() {
-                return this.left_pair.fst;
-            }
-            Pair left_setfst(Object n) {
-                return this.left_pair.setfst(n);
-            }
-            Object left_setfst_snd(Object n) {
-                return this.left_pair.setfst(n).snd;
-            }
-        }
-    ").expect("parsing failed");
+    let input = std::fs::read_to_string("test.fj").expect("could not read file");
+    let ast = parser::parse(&input).expect("parsing failed");
     println!("AST {:#?}", &ast);
+    let ct = semantic::ClassTable::try_from_ast(ast).expect("could not build class table");
+    println!("CT {:#?}", &ct);
+    let triple_fields = ct
+        .fields(&ast::ClassName("Triple".into()))
+        .unwrap()
+        .collect::<Vec<_>>();
+    println!("fields of `Triple`: {:?}", &triple_fields);
 }
