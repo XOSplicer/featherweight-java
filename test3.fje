@@ -1,0 +1,1 @@
+new True().and(new False()).or(new False()).cond(new A(), new B())

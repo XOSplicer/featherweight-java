@@ -1,0 +1,53 @@
+class A extends Object { A() { super(); } }
+
+class B extends Object { B() { super(); } }
+
+class Boolean extends Object {
+    Boolean() { super(); }
+    // these should be abstract, but there are no abstract classes in fj
+    Boolean and(Boolean other) {
+        return this;
+    }
+    Boolean or(Boolean other) {
+        return this;
+    }
+    Boolean not() {
+        return this;
+    }
+    Object cond(Object ifTrue, Object ifFalse) {
+        return this;
+    }
+}
+
+class True extends Boolean {
+    True() { super(); }
+    Boolean and(Boolean other) {
+        return other;
+    }
+    Boolean or(Boolean other) {
+        return new True();
+    }
+    Boolean not() {
+        return new False();
+    }
+    Object cond(Object ifTrue, Object ifFalse) {
+        return ifTrue;
+    }
+}
+
+class False extends Boolean {
+    False() { super(); }
+    Boolean and(Boolean other) {
+        // this should be abstract, but there are no abstract classes in fj
+        return new False();
+    }
+    Boolean or(Boolean other) {
+        return other;
+    }
+    Boolean not() {
+        return new True();
+    }
+    Object cond(Object ifTrue, Object ifFalse) {
+        return ifFalse;
+    }
+}
