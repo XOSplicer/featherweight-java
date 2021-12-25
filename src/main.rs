@@ -2,13 +2,13 @@
 
 mod ast;
 mod parser;
-mod semantic;
+mod class_table;
 
 fn main() {
     let input = std::fs::read_to_string("test.fj").expect("could not read file");
     let ast = parser::parse(&input).expect("parsing failed");
     println!("AST {:#?}", &ast);
-    let ct = semantic::ClassTable::try_from_ast(ast).expect("could not build class table");
+    let ct = class_table::ClassTable::try_from_ast(ast).expect("could not build class table");
     println!("CT {:#?}", &ct);
     let triple_fields = ct
         .fields(&ast::ClassName("Triple".into()))
