@@ -184,8 +184,13 @@ pub fn eval_step(ct: &ClassTable, term: Term) -> Result<Term> {
                     );
                 }
             }
-            _ => todo!(),
+            // E-Cast
+            t => Ok(Cast {
+                to_class_name,
+                term: eval_step(ct, t)?.boxed(),
+            }
+            .into_term()),
         },
-        _ => todo!(),
+        _ => bail!("Evaluation stuck, matiching not implemented"),
     }
 }
