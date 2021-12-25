@@ -38,7 +38,6 @@ class True extends Boolean {
 class False extends Boolean {
     False() { super(); }
     Boolean and(Boolean other) {
-        // this should be abstract, but there are no abstract classes in fj
         return new False();
     }
     Boolean or(Boolean other) {
