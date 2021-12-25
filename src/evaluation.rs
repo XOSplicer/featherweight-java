@@ -192,6 +192,30 @@ pub fn eval_step(ct: &ClassTable, term: Term) -> Result<Term> {
             }
             .into_term()),
         },
-        _ => bail!("Evaluation stuck, matiching not implemented"),
+        // values evaluate to themself
+        Term::NewCall(nc) if nc.has_only_value_args() => Ok(nc.into_term()),
+        // E-New-Arg
+        Term::NewCall(NewCall {
+            mut arg_terms,
+            class_name,
+        }) => {
+            // NOTE(unwrap): safe because of previous match arm
+            let (first_non_value, _) = arg_terms
+                .iter()
+                .enumerate()
+                .find(|(_, t)| !t.is_value())
+                .unwrap();
+            arg_terms[first_non_value] =
+                eval_step(ct, *arg_terms[first_non_value].clone())?.boxed();
+            Ok(NewCall {
+                arg_terms,
+                class_name,
+            }
+            .into_term())
+        }
+        _ => bail!(
+            "Evaluation stuck, matching not implemented, term: {}",
+            &term
+        ),
     }
 }
