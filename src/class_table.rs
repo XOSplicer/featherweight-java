@@ -34,6 +34,8 @@ impl ClassTable {
             }
         }
 
+        // TODO: maybe there checks should be part of typechecking
+
         // - check that the class table is acyclic
         // (this must be checked after the previous check)
         // - check that no field is defined twice in a class
