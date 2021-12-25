@@ -2,7 +2,11 @@ use crate::{ast::*, class_table::ClassTable};
 use anyhow::Result;
 
 pub fn eval_full(ct: &ClassTable, term: Term) -> Result<Term> {
-    todo!()
+    let mut current = term;
+    while !current.is_value() {
+        current = eval_step(ct, current)?;
+    }
+    Ok(current)
 }
 
 impl Term {
