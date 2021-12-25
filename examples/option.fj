@@ -1,0 +1,63 @@
+class Flip extends Object {
+    Flip() { super(); }
+    Flip flip() {
+        return this;
+    }
+}
+
+class A extends Flip {
+    A() { super(); }
+    Flip flip() {
+        return new B();
+    }
+}
+
+class B extends Flip {
+    B() { super(); }
+    Flip flip() {
+        return new A();
+    }
+}
+
+class Function extends Object {
+    Function() { super(); }
+    Object apply(Object arg) {
+        return this;
+    }
+}
+
+class Flipper extends Function {
+    Flipper() { super(); }
+    Object apply(Object arg) {
+        return ((Flip) arg).flip();
+    }
+}
+
+class Option extends Object {
+    Option() { super(); }
+    Option map(Function f) {
+        return this;
+    }
+}
+
+class None extends Option {
+    None() {
+        super();
+    }
+    Option map(Function f) {
+        return new None();
+    }
+}
+
+class Some extends Option {
+    Object inner;
+    Some(Object inner) {
+        super();
+        this.inner = inner;
+    }
+    Option map(Function f) {
+        return new Some(f.apply(this.inner));
+    }
+}
+
+

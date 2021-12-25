@@ -1,0 +1,120 @@
+class Peano extends Object {
+    Peano() {
+        super();
+    }
+    Peano succ() {
+        return new Succ(this);
+    }
+    Peano pred() {
+        return this;
+    }
+    Object fold(Object init, Function f) {
+        return this;
+    }
+    Peano plus(Peano other) {
+        return this;
+    }
+    Peano minus(Peano other) {
+        return this;
+    }
+    Boolean isZero() {
+        return new False();
+    }
+}
+
+class Zero extends Peano {
+    Zero() {
+        super();
+    }
+    Peano pred() {
+        return new Zero();
+    }
+    Object fold(Object init, Function f) {
+        return init;
+    }
+    Peano plus(Peano other) {
+        return other;
+    }
+    Peano minus(Peano other) {
+        return new Zero();
+    }
+    Boolean isZero() {
+        return new True();
+    }
+}
+
+class Succ extends Peano {
+    Peano pred;
+    Succ(Peano pred) {
+        super();
+        this.pred = pred;
+    }
+    Peano pred() {
+        return this.pred;
+    }
+    Object fold(Object init, Function f) {
+        return this.pred.fold(f.apply(init), f);
+    }
+    Peano plus(Peano other) {
+        return this.pred.plus(other).succ();
+    }
+    Peano minus(Peano other) {
+        return other.isZero().cond(this, this.pred().minus(other.pred()));
+    }
+}
+
+class Function extends Object {
+    Function() { super(); }
+    Object apply(Object arg) {
+        return this;
+    }
+}
+
+class Boolean extends Object {
+    Boolean() { super(); }
+    // these should be abstract, but there are no abstract classes in fj
+    Boolean and(Boolean other) {
+        return this;
+    }
+    Boolean or(Boolean other) {
+        return this;
+    }
+    Boolean not() {
+        return this;
+    }
+    Object cond(Object ifTrue, Object ifFalse) {
+        return this;
+    }
+}
+
+class True extends Boolean {
+    True() { super(); }
+    Boolean and(Boolean other) {
+        return other;
+    }
+    Boolean or(Boolean other) {
+        return new True();
+    }
+    Boolean not() {
+        return new False();
+    }
+    Object cond(Object ifTrue, Object ifFalse) {
+        return ifTrue;
+    }
+}
+
+class False extends Boolean {
+    False() { super(); }
+    Boolean and(Boolean other) {
+        return new False();
+    }
+    Boolean or(Boolean other) {
+        return other;
+    }
+    Boolean not() {
+        return new True();
+    }
+    Object cond(Object ifTrue, Object ifFalse) {
+        return ifFalse;
+    }
+}
