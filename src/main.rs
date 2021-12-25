@@ -8,6 +8,7 @@ mod ast;
 mod parser;
 mod class_table;
 mod evaluation;
+mod typecheck;
 
 
 #[derive(structopt::StructOpt)]
