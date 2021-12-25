@@ -3,6 +3,7 @@
 mod ast;
 mod parser;
 mod class_table;
+mod evaluation;
 
 fn main() {
     let input = std::fs::read_to_string("test.fj").expect("could not read file");
@@ -27,4 +28,9 @@ fn main() {
     let subtypes_of_object = ct.subtypes(&ast::ClassName("Object".into())).unwrap().cloned().collect::<Vec<_>>();
     println!("subtypes of object: {:?}", &subtypes_of_object);
 
+
+    // let term = parser::parse_expr_term("new A()").expect("parsing failed");
+    // println!("TERM {:#?}", &term);
+
 }
+
