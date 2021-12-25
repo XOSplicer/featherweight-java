@@ -1,5 +1,8 @@
 WHITESPACE = _{ " " | WHITE_SPACE | NEWLINE }
-COMMENT = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+COMMENT = _{
+    "/*" ~ (!"*/" ~ ANY)* ~ "*/"
+    | "//" ~ (!NEWLINE ~ ANY)* ~ NEWLINE
+}
 
 ident = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
 
