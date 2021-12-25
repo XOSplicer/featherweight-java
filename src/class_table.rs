@@ -256,13 +256,16 @@ impl ClassDefinition {
         self.name == self.constructor.name
     }
     fn has_correct_ctor_init(&self) -> bool {
+        // check that left and right side of assignments have the same field name
+        self.constructor.assignments.iter().all(|(lhs, rhs)| lhs == rhs);
+
         let mut init_fields = BTreeSet::new();
         // check no double init
         for field_name in self
             .constructor
             .assignments
             .iter()
-            .map(|(_, field_name)| field_name)
+            .map(|(field_name, _)| field_name)
         {
             if !init_fields.insert(field_name) {
                 return false;
@@ -276,6 +279,7 @@ impl ClassDefinition {
             .map(|(_, field_name)| field_name)
             .collect();
         let all_inited = init_fields.difference(&class_fields).count() == 0;
+
         all_inited
     }
     fn has_unique_field_names(&self) -> bool {
