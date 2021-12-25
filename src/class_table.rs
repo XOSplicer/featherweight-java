@@ -162,6 +162,19 @@ impl ClassTable {
             }
         })
     }
+
+    pub fn is_correct_method_override(
+        &self,
+        method_name: &MethodName,
+        class_name: &ClassName,
+        method_type: &MethodType,
+    ) -> Option<bool> {
+        let expected_method_type = self.method_type(method_name, class_name)?;
+        Some(
+            expected_method_type.arg_types == method_type.arg_types
+                && expected_method_type.ret_type == method_type.ret_type,
+        )
+    }
 }
 
 #[derive(Debug, Clone)]
