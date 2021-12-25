@@ -34,13 +34,43 @@ impl ClassTable {
             }
         }
 
-        // check that the class table is acyclic
-        // must be checked after the previous check
+        // - check that the class table is acyclic
+        // (this must be checked after the previous check)
+        // - check that no field is defined twice in a class
+        // - check that each class has a contructor with the correct name
+        // - check that a class assigns all fields in the ctor
+        // - check that no method is defined twice in a class
         for class in ct.inner().values() {
             if ct.super_type_chain(&class.name).unwrap().is_cyclic() {
                 bail!(
                     "The supertype chain of class `{}` contains a cycle",
                     &class.name.0
+                )
+            }
+            if !class.has_correct_ctor_name() {
+                bail!(
+                    "Contructor of class `{}` is named `{}`, but should be `{}`",
+                    &class.name.0,
+                    &class.constructor.name.0,
+                    &class.name.0,
+                )
+            }
+            if !class.has_correct_ctor_init() {
+                bail!(
+                    "Contructor of class `{}` does not correctly initialize all fields.",
+                    &class.name.0,
+                )
+            }
+            if !class.has_unique_field_names() {
+                bail!(
+                    "Class `{}` does not have unique field names.",
+                    &class.name.0,
+                )
+            }
+            if !class.has_unique_method_names() {
+                bail!(
+                    "Class `{}` does not have unique method names.",
+                    &class.name.0,
                 )
             }
         }
@@ -115,6 +145,23 @@ impl ClassTable {
             }
         })
     }
+
+    pub fn method_body(
+        &self,
+        method_name: &MethodName,
+        class_name: &ClassName,
+    ) -> Option<MethodBody> {
+        self.inner().get(class_name).and_then(|class| {
+            match class
+                .methods
+                .iter()
+                .find(|method| &method.method_name == method_name)
+            {
+                Some(method) => Some(MethodBody::from_method(method)),
+                None => self.method_body(method_name, self.super_type(class_name).unwrap()),
+            }
+        })
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -136,8 +183,27 @@ impl MethodType {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct MethodBody {
+    pub args: Vec<FieldName>,
+    pub return_term: Box<Term>,
+}
+
+impl MethodBody {
+    pub fn from_method(method: &MethodDefinition) -> Self {
+        MethodBody {
+            args: method
+                .args
+                .iter()
+                .map(|(_, field_name)| field_name.clone())
+                .collect(),
+            return_term: method.return_term.clone(),
+        }
+    }
+}
+
 impl ClassName {
-    fn is_object(&self) -> bool {
+    pub fn is_object(&self) -> bool {
         self.0 == "Object"
     }
 }
@@ -169,5 +235,52 @@ impl<'a> Iterator for SuperTypeChain<'a> {
         let next = self.ct.super_type(self.last).unwrap();
         self.last = next;
         Some(next)
+    }
+}
+
+impl ClassDefinition {
+    fn has_correct_ctor_name(&self) -> bool {
+        self.name == self.constructor.name
+    }
+    fn has_correct_ctor_init(&self) -> bool {
+        let mut init_fields = BTreeSet::new();
+        // check no double init
+        for field_name in self
+            .constructor
+            .assignments
+            .iter()
+            .map(|(_, field_name)| field_name)
+        {
+            if !init_fields.insert(field_name) {
+                return false;
+            }
+        }
+        let init_fields = init_fields;
+        // check for doubles in below method
+        let class_fields: BTreeSet<_> = self
+            .fields
+            .iter()
+            .map(|(_, field_name)| field_name)
+            .collect();
+        let all_inited = init_fields.difference(&class_fields).count() == 0;
+        all_inited
+    }
+    fn has_unique_field_names(&self) -> bool {
+        let mut seen = BTreeSet::new();
+        for field_name in self.fields.iter().map(|(_, field_name)| field_name) {
+            if !seen.insert(field_name) {
+                return false;
+            }
+        }
+        true
+    }
+    fn has_unique_method_names(&self) -> bool {
+        let mut seen = BTreeSet::new();
+        for method_name in self.methods.iter().map(|method| &method.method_name) {
+            if !seen.insert(method_name) {
+                return false;
+            }
+        }
+        true
     }
 }
