@@ -40,6 +40,9 @@ impl ClassTable {
         // - check that each class has a contructor with the correct name
         // - check that a class assigns all fields in the ctor
         // - check that no method is defined twice in a class
+        // - check that methods have unique argument names
+        // - check that class fields are not named `this`
+        // - check that method/ctor args are not named `this`
         for class in ct.inner().values() {
             if ct.super_type_chain(&class.name).unwrap().is_cyclic() {
                 bail!(
@@ -72,6 +75,37 @@ impl ClassTable {
                     "Class `{}` does not have unique method names.",
                     &class.name.0,
                 )
+            }
+
+            if !class.has_only_valid_field_names() {
+                bail!(
+                    "Class `{}` may not contain `this` as a field.",
+                    &class.name.0,
+                )
+            }
+
+            if !class.constructor.has_only_valid_argument_names() {
+                bail!(
+                    "Contructor of class `{}` may not contain `this` as an argument.",
+                    &class.name.0,
+                )
+            }
+
+            for method in class.methods.iter() {
+                if !method.has_unique_argument_names() {
+                    bail!(
+                        "Method `{}` in class `{}` does not have unique argument names.",
+                        &method.method_name.0,
+                        &class.name.0,
+                    )
+                }
+                if !method.has_only_valid_argument_names() {
+                    bail!(
+                        "Method `{}` in class `{}` may not contain `this` as an argument",
+                        &method.method_name.0,
+                        &class.name.0,
+                    )
+                }
             }
         }
 
@@ -310,7 +344,37 @@ impl ClassDefinition {
         true
     }
 
-    // TODO: add check that methods have unique argument names
-    // TODO: add check that class fields are not named `this`
-    // TODO: add check that method/ctor args are not named `this`
+    fn has_only_valid_field_names(&self) -> bool {
+        self.fields
+            .iter()
+            .map(|(_, arg_name)| arg_name)
+            .all(|arg_name| arg_name.0 != "this")
+    }
+}
+
+impl MethodDefinition {
+    fn has_unique_argument_names(&self) -> bool {
+        let mut seen = BTreeSet::new();
+        for arg_name in self.args.iter().map(|(_, arg_name)| arg_name) {
+            if !seen.insert(arg_name) {
+                return false;
+            }
+        }
+        true
+    }
+    fn has_only_valid_argument_names(&self) -> bool {
+        self.args
+            .iter()
+            .map(|(_, arg_name)| arg_name)
+            .all(|arg_name| arg_name.0 != "this")
+    }
+}
+
+impl Constructor {
+    fn has_only_valid_argument_names(&self) -> bool {
+        self.args
+            .iter()
+            .map(|(_, arg_name)| arg_name)
+            .all(|arg_name| arg_name.0 != "this")
+    }
 }
