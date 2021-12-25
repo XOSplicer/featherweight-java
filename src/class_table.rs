@@ -300,4 +300,8 @@ impl ClassDefinition {
         }
         true
     }
+
+    // TODO: add check that methods have unique argument names
+    // TODO: add check that class fields are not named `this`
+    // TODO: add check that method/ctor args are not named `this`
 }

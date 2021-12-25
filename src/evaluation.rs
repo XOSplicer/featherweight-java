@@ -1,6 +1,8 @@
 use crate::{ast::*, class_table::ClassTable};
 use anyhow::anyhow;
 use anyhow::Result;
+use std::collections::BTreeMap;
+use std::iter;
 
 pub fn eval_full(ct: &ClassTable, term: Term) -> Result<Term> {
     let mut current = term;
@@ -70,6 +72,14 @@ fn substitute(in_term: Term, to_replace: &FieldName, with_term: Term) -> Term {
     }
 }
 
+fn substitute_many(in_term: Term, replacements: BTreeMap<&FieldName, Term>) -> Term {
+    let mut current = in_term;
+    for (to_replace, with_term) in replacements {
+        current = substitute(current, to_replace, with_term);
+    }
+    current
+}
+
 pub fn eval_step(ct: &ClassTable, term: Term) -> Result<Term> {
     match term {
         Term::FieldAccess(FieldAccess { field, object_term }) => match *object_term {
@@ -93,6 +103,32 @@ pub fn eval_step(ct: &ClassTable, term: Term) -> Result<Term> {
                     .clone())
             }
             // E-Field
+            _ => todo!(),
+        },
+        Term::MethodCall(MethodCall {
+            arg_terms,
+            method_name,
+            object_term,
+        }) => match *object_term {
+            // E-Invk-New
+            Term::NewCall(nc) if nc.has_only_value_args() => {
+                let method_body = ct.method_body(&method_name, &nc.class_name).ok_or(anyhow!(
+                    "Method `{}` in class `{}` not defined",
+                    &method_name.0,
+                    &nc.class_name.0
+                ))?;
+                let this_field = FieldName("this".into());
+                let replacements =
+                    iter::once((&this_field, Term::NewCall(nc.clone())))
+                        .chain(
+                            method_body
+                                .args
+                                .iter()
+                                .zip(arg_terms.into_iter().map(|t| *t)),
+                        )
+                        .collect();
+                Ok(substitute_many(*method_body.return_term, replacements))
+            }
             _ => todo!(),
         },
         _ => todo!(),
