@@ -1,5 +1,6 @@
 use crate::{ast::*, class_table::ClassTable};
 use anyhow::anyhow;
+use anyhow::bail;
 use anyhow::Result;
 use std::collections::BTreeMap;
 use std::iter;
@@ -118,16 +119,37 @@ pub fn eval_step(ct: &ClassTable, term: Term) -> Result<Term> {
                     &nc.class_name.0
                 ))?;
                 let this_field = FieldName("this".into());
-                let replacements =
-                    iter::once((&this_field, Term::NewCall(nc.clone())))
-                        .chain(
-                            method_body
-                                .args
-                                .iter()
-                                .zip(arg_terms.into_iter().map(|t| *t)),
-                        )
-                        .collect();
+                let replacements = iter::once((&this_field, Term::NewCall(nc)))
+                    .chain(
+                        method_body
+                            .args
+                            .iter()
+                            .zip(arg_terms.into_iter().map(|t| *t)),
+                    )
+                    .collect();
                 Ok(substitute_many(*method_body.return_term, replacements))
+            }
+            _ => todo!(),
+        },
+        Term::Cast(Cast {
+            term,
+            to_class_name,
+        }) => match *term {
+            // E-CastNew
+            Term::NewCall(nc) if nc.has_only_value_args() => {
+                if ct.is_subtype(&nc.class_name, &to_class_name).ok_or(anyhow!(
+                    "Class `{}` or `{}` not defined",
+                    &nc.class_name.0,
+                    &to_class_name.0
+                ))? {
+                    Ok(Term::NewCall(nc))
+                } else {
+                    bail!(
+                        "Cast failed for class `{}` to `{}`",
+                        &nc.class_name.0,
+                        &to_class_name.0
+                    );
+                }
             }
             _ => todo!(),
         },

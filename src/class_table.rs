@@ -94,6 +94,12 @@ impl ClassTable {
     }
 
     pub fn is_subtype(&self, lhs: &ClassName, rhs: &ClassName) -> Option<bool> {
+        if lhs == rhs && self.inner().contains_key(lhs) {
+            return Some(true);
+        }
+        if rhs.is_object() && self.inner().contains_key(lhs) {
+            return Some(true);
+        }
         self.super_type_chain(lhs)
             .map(|mut super_types| super_types.any(|s| s == rhs))
     }
@@ -257,7 +263,10 @@ impl ClassDefinition {
     }
     fn has_correct_ctor_init(&self) -> bool {
         // check that left and right side of assignments have the same field name
-        self.constructor.assignments.iter().all(|(lhs, rhs)| lhs == rhs);
+        self.constructor
+            .assignments
+            .iter()
+            .all(|(lhs, rhs)| lhs == rhs);
 
         let mut init_fields = BTreeSet::new();
         // check no double init
