@@ -9,8 +9,8 @@ use pest_derive::Parser;
 pub struct FJParser;
 
 pub fn parse(input: &str) -> Result<ast::Ast> {
-    let program = FJParser::parse(Rule::program, input)?;
-    parse_program(program)
+    let pairs = FJParser::parse(Rule::program, input)?;
+    parse_program(pairs)
 }
 
 // TODO: add function to only parse a single term
@@ -20,6 +20,18 @@ pub fn parse(input: &str) -> Result<ast::Ast> {
 //     let term = FJParser::parse(Rule::term, input)?;
 //     Ok(parse_term(term))
 // }
+
+pub fn parse_eval_input(input: &str) -> Result<ast::Term> {
+    let pairs = FJParser::parse(Rule::eval_input_term, input)?;
+    parse_eval_input_term(pairs)
+}
+
+fn parse_eval_input_term(mut pairs: Pairs<Rule>) -> Result<ast::Term> {
+    println!("parse_eval_input_term {:#?}", &pairs);
+    let pair = pairs.next().unwrap();
+    let term = parse_term(pair);
+    Ok(term)
+}
 
 // TODO: parse_* can ommit the usage of Result<_>
 

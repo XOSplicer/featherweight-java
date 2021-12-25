@@ -29,8 +29,10 @@ fn main() {
     println!("subtypes of object: {:?}", &subtypes_of_object);
 
 
-    // let term = parser::parse_expr_term("new A()").expect("parsing failed");
-    // println!("TERM {:#?}", &term);
+    let term = parser::parse_eval_input("new A()").expect("parsing failed");
+    println!("TERM {:#?}", &term);
+
+
 
 }
 

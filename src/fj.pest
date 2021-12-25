@@ -7,6 +7,10 @@ program = _{
     SOI ~ class_definition+ ~ EOI
 }
 
+eval_input_term = _{
+    SOI ~ term ~ EOI
+}
+
 class_definition = {
     "class" ~ ident ~ "extends" ~ ident ~ "{"
     ~ field_definition*
