@@ -20,6 +20,9 @@ class Peano extends Object {
     Boolean isZero() {
         return new False();
     }
+    Boolean isNonZero() {
+        return this.isZero().not();
+    }
 }
 
 class Zero extends Peano {

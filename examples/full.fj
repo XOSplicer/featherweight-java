@@ -1,0 +1,277 @@
+class Flip extends Object {
+    Flip() { super(); }
+    Flip flip() {
+        return this;
+    }
+}
+
+class A extends Flip {
+    A() { super(); }
+    Flip flip() {
+        return new B();
+    }
+}
+
+class B extends Flip {
+    B() { super(); }
+    Flip flip() {
+        return new A();
+    }
+}
+
+class Function0 extends Object {
+    Function0() { super(); }
+    Object apply() {
+        return this;
+    }
+}
+
+class Function1 extends Object {
+    Function1() { super(); }
+    Object apply(Object arg) {
+        return this;
+    }
+}
+
+class Function2 extends Object {
+    Function2() { super(); }
+    Object apply(Object arg0, Object arg1) {
+        return this;
+    }
+}
+
+class Flipper1 extends Function1 {
+    Flipper1() { super(); }
+    Object apply(Object arg) {
+        return ((Flip) arg).flip();
+    }
+}
+
+class Boolean extends Object {
+    Boolean() { super(); }
+    // these should be abstract, but there are no abstract classes in fj
+    Boolean and(Boolean other) {
+        return this;
+    }
+    Boolean or(Boolean other) {
+        return this;
+    }
+    Boolean not() {
+        return this;
+    }
+    Object cond(Object ifTrue, Object ifFalse) {
+        return this;
+    }
+}
+
+class True extends Boolean {
+    True() { super(); }
+    Boolean and(Boolean other) {
+        return other;
+    }
+    Boolean or(Boolean other) {
+        return new True();
+    }
+    Boolean not() {
+        return new False();
+    }
+    Object cond(Object ifTrue, Object ifFalse) {
+        return ifTrue;
+    }
+}
+
+class False extends Boolean {
+    False() { super(); }
+    Boolean and(Boolean other) {
+        return new False();
+    }
+    Boolean or(Boolean other) {
+        return other;
+    }
+    Boolean not() {
+        return new True();
+    }
+    Object cond(Object ifTrue, Object ifFalse) {
+        return ifFalse;
+    }
+}
+
+class List extends Object {
+    List() { super(); }
+    Object head() {
+        return this;
+    }
+    List tail() {
+        return this;
+    }
+}
+
+class Nil extends List {
+    Nil() { super(); }
+}
+
+class Cons extends List {
+    Object head;
+    List tail;
+    Cons(Object head, List tail) {
+        super();
+        this.head = head;
+        this.tail = tail;
+    }
+    Object head() {
+        return this.head;
+    }
+    List tail() {
+        return this.tail;
+    }
+}
+
+class Function extends Object {
+    Function() { super(); }
+    Object apply(Object arg) {
+        return this;
+    }
+}
+
+class Flipper extends Function {
+    Flipper() { super(); }
+    Object apply(Object arg) {
+        return ((Flip) arg).flip();
+    }
+}
+
+class Option extends Object {
+    Option() { super(); }
+    Option map(Function f) {
+        return this;
+    }
+}
+
+class None extends Option {
+    None() {
+        super();
+    }
+    Option map(Function f) {
+        return new None();
+    }
+}
+
+class Some extends Option {
+    Object inner;
+    Some(Object inner) {
+        super();
+        this.inner = inner;
+    }
+    Option map(Function f) {
+        return new Some(f.apply(this.inner));
+    }
+}
+
+class Peano extends Object {
+    Peano() {
+        super();
+    }
+    Peano succ() {
+        return new Succ(this);
+    }
+    Peano pred() {
+        return this;
+    }
+    Object fold(Object init, Function f) {
+        return this;
+    }
+    Peano plus(Peano other) {
+        return this;
+    }
+    Peano minus(Peano other) {
+        return this;
+    }
+    Boolean isZero() {
+        return new False();
+    }
+    Boolean isNonZero() {
+        return this.isZero().not();
+    }
+}
+
+class Zero extends Peano {
+    Zero() {
+        super();
+    }
+    Peano pred() {
+        return new Zero();
+    }
+    Object fold(Object init, Function f) {
+        return init;
+    }
+    Peano plus(Peano other) {
+        return other;
+    }
+    Peano minus(Peano other) {
+        return new Zero();
+    }
+    Boolean isZero() {
+        return new True();
+    }
+}
+
+class Succ extends Peano {
+    Peano pred;
+    Succ(Peano pred) {
+        super();
+        this.pred = pred;
+    }
+    Peano pred() {
+        return this.pred;
+    }
+    Object fold(Object init, Function f) {
+        return this.pred.fold(f.apply(init), f);
+    }
+    Peano plus(Peano other) {
+        return this.pred.plus(other).succ();
+    }
+    Peano minus(Peano other) {
+        return other.isZero().cond(this, this.pred().minus(other.pred()));
+    }
+}
+
+class Pair extends Object {
+    Object fst;
+    Object snd;
+
+    Pair(Object fst, Object snd) {
+        super();
+        this.fst=fst;
+        this.snd=snd;
+    }
+    Pair setfst(Object newfst) {
+        return new Pair(newfst, this.snd);
+    }
+}
+
+class D extends Object {
+    Pair left_pair;
+    Pair right_pair;
+    D(Pair left_pair, Pair right_pair) {
+        super();
+        this.left_pair=left_pair;
+        this.right_pair=right_pair;
+    }
+    Object leftmost() {
+        return this.left_pair.fst;
+    }
+    Pair left_setfst(Object n) {
+        return this.left_pair.setfst(n);
+    }
+    Object left_setfst_snd(Object n) {
+        return this.left_pair.setfst(n).snd;
+    }
+}
+
+class Triple extends Pair {
+    Object trd;
+    Triple(Object fst, Object snd, Object trd) {
+        super(fst, snd);
+        this.trd=trd;
+    }
+}
