@@ -1,0 +1,1 @@
+new Pair(new A(), new A()).setfst(new B()).fst

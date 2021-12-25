@@ -8,6 +8,7 @@ use std::iter;
 pub fn eval_full(ct: &ClassTable, term: Term) -> Result<Term> {
     let mut current = term;
     while !current.is_value() {
+        println!("eval_full current term: {}", &current);
         current = eval_step(ct, current)?;
     }
     Ok(current)

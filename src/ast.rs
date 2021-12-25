@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 #[derive(Debug, Clone)]
 pub struct Ast {
     pub class_definitions: Vec<ClassDefinition>,
@@ -106,4 +108,38 @@ impl Cast {
     }
 }
 
-// TODO: value trait?
+impl Display for Term {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Term::Cast(Cast {
+                to_class_name,
+                term,
+            }) => write!(f, "(({}) {})", &to_class_name.0, &term),
+            Term::FieldAccess(FieldAccess { object_term, field }) => {
+                write!(f, "({}).{}", &object_term, &field.0)
+            }
+            Term::MethodCall(MethodCall {
+                method_name,
+                arg_terms,
+                object_term,
+            }) => {
+                write!(f, "({}).{}(", &object_term, &method_name.0)?;
+                for t in arg_terms {
+                    write!(f, "({}),", t)?;
+                }
+                write!(f, ")")
+            }
+            Term::NewCall(NewCall {
+                class_name,
+                arg_terms,
+            }) => {
+                write!(f, "new {}(", &class_name.0)?;
+                for t in arg_terms {
+                    write!(f, "({}),", t)?;
+                }
+                write!(f, ")")
+            }
+            Term::Variable(x) => write!(f, "{}", &x.0),
+        }
+    }
+}
