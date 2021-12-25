@@ -116,16 +116,16 @@ impl Display for Term {
                 term,
             }) => write!(f, "(({}) {})", &to_class_name.0, &term),
             Term::FieldAccess(FieldAccess { object_term, field }) => {
-                write!(f, "({}).{}", &object_term, &field.0)
+                write!(f, "{}.{}", &object_term, &field.0)
             }
             Term::MethodCall(MethodCall {
                 method_name,
                 arg_terms,
                 object_term,
             }) => {
-                write!(f, "({}).{}(", &object_term, &method_name.0)?;
+                write!(f, "{}.{}(", &object_term, &method_name.0)?;
                 for t in arg_terms {
-                    write!(f, "({}),", t)?;
+                    write!(f, "{},", t)?;
                 }
                 write!(f, ")")
             }
@@ -135,7 +135,7 @@ impl Display for Term {
             }) => {
                 write!(f, "new {}(", &class_name.0)?;
                 for t in arg_terms {
-                    write!(f, "({}),", t)?;
+                    write!(f, "{},", t)?;
                 }
                 write!(f, ")")
             }

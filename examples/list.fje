@@ -1,0 +1,8 @@
+new Cons(
+    new A(),
+    new Cons(
+        new B(),
+        new Nil(),
+    ))
+.tail()
+.head()

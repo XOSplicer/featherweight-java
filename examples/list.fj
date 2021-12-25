@@ -1,0 +1,33 @@
+class A extends Object { A() { super(); } }
+
+class B extends Object { B() { super(); } }
+
+class List extends Object {
+    List() { super(); }
+    Object head() {
+        return this;
+    }
+    List tail() {
+        return this;
+    }
+}
+
+class Nil extends List {
+    Nil() { super(); }
+}
+
+class Cons extends List {
+    Object head;
+    List tail;
+    Cons(Object head, List tail) {
+        super();
+        this.head = head;
+        this.tail = tail;
+    }
+    Object head() {
+        return this.head;
+    }
+    List tail() {
+        return this.tail;
+    }
+}
