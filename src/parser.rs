@@ -19,7 +19,7 @@ pub fn parse_eval_input(input: &str) -> Result<ast::Term> {
 }
 
 fn parse_eval_input_term(mut pairs: Pairs<Rule>) -> Result<ast::Term> {
-    println!("parse_eval_input_term {:#?}", &pairs);
+    // println!("parse_eval_input_term {:#?}", &pairs);
     let pair = pairs.next().unwrap();
     let term = parse_term(pair);
     Ok(term)
@@ -28,7 +28,7 @@ fn parse_eval_input_term(mut pairs: Pairs<Rule>) -> Result<ast::Term> {
 // TODO: parse_* can ommit the usage of Result<_>
 
 fn parse_program(pairs: Pairs<Rule>) -> Result<ast::Ast> {
-    println!("parse_program {:#?}", &pairs);
+    // println!("parse_program {:#?}", &pairs);
     let class_definitions = pairs
         .take_while(|pair| pair.as_rule() != Rule::EOI)
         .map(parse_class_definition)
@@ -37,7 +37,7 @@ fn parse_program(pairs: Pairs<Rule>) -> Result<ast::Ast> {
 }
 
 fn parse_class_definition(pair: Pair<Rule>) -> Result<ast::ClassDefinition> {
-    println!("parse_class_definition {:#?}", &pair);
+    // println!("parse_class_definition {:#?}", &pair);
     Ok(match pair.as_rule() {
         Rule::class_definition => {
             let mut pairs = pair.into_inner();
@@ -70,7 +70,7 @@ fn parse_class_definition(pair: Pair<Rule>) -> Result<ast::ClassDefinition> {
 }
 
 fn parse_field_definition(pair: Pair<Rule>) -> Result<ast::ArgPair> {
-    println!("parse_field_definition {:#?}", &pair);
+    // println!("parse_field_definition {:#?}", &pair);
     Ok(match pair.as_rule() {
         Rule::field_definition => {
             let mut pairs = pair.into_inner();
@@ -86,7 +86,7 @@ fn parse_field_definition(pair: Pair<Rule>) -> Result<ast::ArgPair> {
 }
 
 fn parse_constructor(pair: Pair<Rule>) -> Result<ast::Constructor> {
-    println!("parse_constructor {:#?}", &pair);
+    // println!("parse_constructor {:#?}", &pair);
     Ok(match pair.as_rule() {
         Rule::constructor => {
             let mut pairs = pair.into_inner();
@@ -120,7 +120,7 @@ fn parse_constructor(pair: Pair<Rule>) -> Result<ast::Constructor> {
 }
 
 fn parse_arg_list(pair: Pair<Rule>) -> Result<Vec<ast::ArgPair>> {
-    println!("parse_arg_list {:#?}", &pair);
+    // println!("parse_arg_list {:#?}", &pair);
     Ok(match pair.as_rule() {
         Rule::arg_list => {
             let mut pairs = pair.into_inner().peekable();
@@ -138,7 +138,7 @@ fn parse_arg_list(pair: Pair<Rule>) -> Result<Vec<ast::ArgPair>> {
 }
 
 fn parse_super_field_list(pair: Pair<Rule>) -> Result<Vec<ast::FieldName>> {
-    println!("parse_super_field_list {:#?}", &pair);
+    // println!("parse_super_field_list {:#?}", &pair);
     Ok(match pair.as_rule() {
         Rule::field_list => {
             let pairs = pair.into_inner();
@@ -151,7 +151,7 @@ fn parse_super_field_list(pair: Pair<Rule>) -> Result<Vec<ast::FieldName>> {
 }
 
 fn parse_assignment(pair: Pair<Rule>) -> Result<(ast::FieldName, ast::FieldName)> {
-    println!("parse_assignment {:#?}", &pair);
+    // println!("parse_assignment {:#?}", &pair);
     Ok(match pair.as_rule() {
         Rule::assignment => {
             let mut pairs = pair.into_inner();
@@ -165,7 +165,7 @@ fn parse_assignment(pair: Pair<Rule>) -> Result<(ast::FieldName, ast::FieldName)
 }
 
 fn parse_method_definition(pair: Pair<Rule>) -> Result<ast::MethodDefinition> {
-    println!("parse_method_definition {:#?}", &pair);
+    // println!("parse_method_definition {:#?}", &pair);
     Ok(match pair.as_rule() {
         Rule::method_definition => {
             let mut pairs = pair.into_inner();
@@ -195,7 +195,7 @@ fn parse_method_definition(pair: Pair<Rule>) -> Result<ast::MethodDefinition> {
 }
 
 fn parse_term(pair: Pair<Rule>) -> ast::Term {
-    println!("parse_term_left {:#?}", &pair);
+    // println!("parse_term_left {:#?}", &pair);
     match pair.as_rule() {
         Rule::term => {
             let mut pairs = pair.into_inner();
@@ -223,7 +223,7 @@ fn parse_term(pair: Pair<Rule>) -> ast::Term {
 }
 
 fn parse_term_left(pair: Pair<Rule>) -> ast::Term {
-    println!("parse_term_left {:#?}", &pair);
+    // println!("parse_term_left {:#?}", &pair);
     match pair.as_rule() {
         Rule::term_left => {
             let pair = pair.into_inner().next().unwrap();
@@ -240,7 +240,7 @@ fn parse_term_left(pair: Pair<Rule>) -> ast::Term {
 }
 
 fn parse_cast(pair: Pair<Rule>) -> ast::Cast {
-    println!("parse_cast {:#?}", &pair);
+    // println!("parse_cast {:#?}", &pair);
     match pair.as_rule() {
         Rule::cast => {
             let mut pairs = pair.into_inner();
@@ -256,7 +256,7 @@ fn parse_cast(pair: Pair<Rule>) -> ast::Cast {
 }
 
 fn parse_new_call(pair: Pair<Rule>) -> ast::NewCall {
-    println!("parse_new_call {:#?}", &pair);
+    // println!("parse_new_call {:#?}", &pair);
     match pair.as_rule() {
         Rule::new_call => {
             let mut pairs = pair.into_inner();
@@ -285,7 +285,7 @@ impl PartialFieldAccess {
 }
 
 fn parse_field_access(pair: Pair<Rule>) -> PartialFieldAccess {
-    println!("parse_field_access {:#?}", &pair);
+    // println!("parse_field_access {:#?}", &pair);
     match pair.as_rule() {
         Rule::field_access => {
             let mut pairs = pair.into_inner();
@@ -314,7 +314,7 @@ impl PartialMethodCall {
 }
 
 fn parse_method_call(pair: Pair<Rule>) -> PartialMethodCall {
-    println!("parse_method_call {:#?}", &pair);
+    // println!("parse_method_call {:#?}", &pair);
     match pair.as_rule() {
         Rule::method_call => {
             let mut pairs = pair.into_inner();

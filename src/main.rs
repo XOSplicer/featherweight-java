@@ -31,12 +31,19 @@ fn main() {
     println!("subtypes of object: {:?}", &subtypes_of_object);
 
 
+    let input = std::fs::read_to_string("test.fje").expect("could not read file");
+    let term = parser::parse_eval_input(&input).expect("parsing failed");
+    println!("TERM1 {}", &term);
+
+    let result = eval_full(&ct, term).expect("eval failed");
+    println!("RESULT1 {}", &result);
+
     let input = std::fs::read_to_string("test2.fje").expect("could not read file");
     let term = parser::parse_eval_input(&input).expect("parsing failed");
-    println!("TERM {}", &term);
+    println!("TERM2 {}", &term);
 
-    let result = eval_full(&ct, term);
-    println!("RESULT {:?}", &result);
+    let result = eval_full(&ct, term).expect("eval failed");
+    println!("RESULT2 {}", &result);
 
 }
 
