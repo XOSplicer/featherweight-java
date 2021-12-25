@@ -1,0 +1,1 @@
+((Pair) new Pair(new Pair(new A(), new B()), new A()).fst).snd

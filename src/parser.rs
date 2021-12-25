@@ -13,14 +13,6 @@ pub fn parse(input: &str) -> Result<ast::Ast> {
     parse_program(pairs)
 }
 
-// TODO: add function to only parse a single term
-// maybe a new entry rule is needed
-
-// pub fn parse_expr_term(input: &str) -> Result<ast::Term> {
-//     let term = FJParser::parse(Rule::term, input)?;
-//     Ok(parse_term(term))
-// }
-
 pub fn parse_eval_input(input: &str) -> Result<ast::Term> {
     let pairs = FJParser::parse(Rule::eval_input_term, input)?;
     parse_eval_input_term(pairs)

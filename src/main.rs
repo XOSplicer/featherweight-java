@@ -29,7 +29,8 @@ fn main() {
     println!("subtypes of object: {:?}", &subtypes_of_object);
 
 
-    let term = parser::parse_eval_input("new A()").expect("parsing failed");
+    let input = std::fs::read_to_string("test.fje").expect("could not read file");
+    let term = parser::parse_eval_input(&input).expect("parsing failed");
     println!("TERM {:#?}", &term);
 
 

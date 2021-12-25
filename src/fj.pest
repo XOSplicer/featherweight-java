@@ -56,9 +56,10 @@ term = {
     term_left ~ dot_chain*
 }
 
+// NOTE: cast is syntactically more specific than parenthesis
 term_left = {
-      "(" ~ term ~ ")"
-    | cast
+     cast
+    |  "(" ~ term ~ ")"
     | new_call
     | ident
 }
