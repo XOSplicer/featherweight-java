@@ -3,6 +3,7 @@
 use crate::evaluation::eval_full;
 use anyhow;
 use std::path::PathBuf;
+use typecheck::{typecheck_ast, typecheck_term, Gamma};
 
 mod ast;
 mod parser;
@@ -23,19 +24,26 @@ struct Args {
 fn main(args: Args) -> anyhow::Result<()> {
     let input = std::fs::read_to_string(args.fj_lib_file).expect("could not read file");
     let ast = parser::parse(&input).expect("parsing failed");
-    println!("AST {:#?}", &ast);
-    let ct = class_table::ClassTable::try_from_ast(ast).expect("could not build class table");
-    println!("CT {:#?}", &ct);
+    println!("LIBRARY AST PARSED OK");
+    let ct = class_table::ClassTable::try_from_ast(ast.clone()).expect("could not build class table");
+    println!("CLASS TABLE OK");
+
+    typecheck_ast(&ct, &ast)?;
+    println!("TYPECHECK for library OK");
 
     let subtypes_of_object = ct.subtypes(&ast::ClassName("Object".into())).unwrap().cloned().collect::<Vec<_>>();
-    println!("subtypes of object: {:?}", &subtypes_of_object);
+    println!("Subtypes of object: {:?}", &subtypes_of_object);
 
     let input = std::fs::read_to_string(args.fj_expression_file).expect("could not read file");
     let term = parser::parse_eval_input(&input).expect("parsing failed");
-    println!("TERM1 {}", &term);
+    println!("TERM PARSED OK");
+    println!("INPUT TERM {}", &term);
+
+    let term_type = typecheck_term(&ct, &Gamma::empty(), &term)?;
+    println!("TYPECHECK types term as {}", &term_type.0);
 
     let result = eval_full(&ct, term).expect("eval failed");
-    println!("RESULT1 {}", &result);
+    println!("EVALUATION RESULT {}", &result);
 
     Ok(())
 }

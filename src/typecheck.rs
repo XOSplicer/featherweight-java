@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::class_table::MethodType;
 use crate::{ast::*, class_table::ClassTable};
-use anyhow::{anyhow, bail, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use std::iter;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -15,6 +15,9 @@ impl Gamma {
         Gamma {
             inner: BTreeMap::new(),
         }
+    }
+    pub fn empty() -> Self {
+        Self::new()
     }
     pub fn from_class_method(class_name: &ClassName, method: &MethodDefinition) -> Self {
         Gamma {
@@ -119,13 +122,16 @@ pub fn typecheck_term(ct: &ClassTable, gamma: &Gamma, term: &Term) -> Result<Cla
         }
         Term::Cast(Cast { to_class_name, term }) => {
             let term_type = typecheck_term(ct, gamma, term)?;
-            if !ct.inner().contains_key(to_class_name) {
+            if !ct.contains_class(to_class_name) {
                 bail!("Class `{}` not in class table",&to_class_name.0);
             }
-            if !ct.inner().contains_key(&term_type) {
+            if !ct.contains_class(&term_type) {
                 bail!("Class `{}` not in class table",&term_type.0);
             }
             // T-UpCast
+            dbg!(&to_class_name);
+            dbg!(&term_type);
+
             if ct.is_subtype(&term_type, to_class_name).unwrap() {
                 return Ok(to_class_name.clone())
             }
@@ -212,4 +218,15 @@ pub fn typecheck_class(ct: &ClassTable, class: &ClassDefinition) -> Result<Class
         .collect::<Result<Vec<_>>>()?;
 
     Ok(ClassOk)
+}
+
+pub fn typecheck_ast(ct: &ClassTable, ast: &Ast) -> Result<()> {
+    ast.class_definitions
+        .iter()
+        .map(|class| {
+            typecheck_class(ct, class)
+                .context(anyhow!("Typechecking for class `{}` failed", &class.name.0))
+        })
+        .map(|r| r.map(|_| ()))
+        .collect()
 }

@@ -122,7 +122,13 @@ impl ClassTable {
         self.inner().get(class_name).map(|class| &class.super_type)
     }
 
-    pub fn super_type_chain(&self, class_name: &ClassName) -> Option<SuperTypeChain<'_>> {
+    pub fn super_type_chain<'a>(&'a self, class_name: &'a ClassName) -> Option<SuperTypeChain<'a>> {
+        if class_name.is_object() {
+            return Some(SuperTypeChain {
+                ct: &self,
+                last: class_name,
+            });
+        }
         self.inner().get(class_name).map(|class| SuperTypeChain {
             ct: &self,
             last: &class.name,
@@ -130,21 +136,29 @@ impl ClassTable {
     }
 
     pub fn is_subtype(&self, lhs: &ClassName, rhs: &ClassName) -> Option<bool> {
-        if lhs == rhs && self.inner().contains_key(lhs) {
+        if lhs.is_object() && rhs.is_object() {
             return Some(true);
         }
-        if rhs.is_object() && self.inner().contains_key(lhs) {
+        if lhs == rhs && self.contains_class(lhs) {
             return Some(true);
         }
+        if rhs.is_object() && self.contains_class(lhs) {
+            return Some(true);
+        }
+        dbg!(lhs, rhs);
         self.super_type_chain(lhs)
             .map(|mut super_types| super_types.any(|s| s == rhs))
+    }
+
+    pub fn contains_class(&self, class_name: &ClassName) -> bool {
+        self.inner().contains_key(class_name) || class_name.is_object()
     }
 
     pub fn subtypes<'a>(
         &'a self,
         class_name: &'a ClassName,
     ) -> Option<impl Iterator<Item = &'a ClassName>> {
-        if !(self.inner().contains_key(class_name) || class_name.is_object()) {
+        if !(self.contains_class(class_name)) {
             return None;
         }
         Some(
