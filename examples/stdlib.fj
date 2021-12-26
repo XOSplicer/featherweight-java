@@ -468,13 +468,82 @@ class Cons extends List {
     }
 }
 
-class Pair extends Object {
-    Pair() { super(); }
+class Pair extends Equals {
+    Equals first;
+    Equals second;
+    Pair(Equals first, Equals second) {
+        super();
+        this.first = first;
+        this.second = second;
+    }
+    Pair mapFirst(Function f) {
+        return new Pair((Equals) f.apply(this.first), this.second);
+    }
+    Pair mapSecond(Function f) {
+        return new Pair(this.first, (Equals) f.apply(this.second));
+    }
+    Pair setFirst(Equals first) {
+        return new Pair(first, this.second);
+    }
+    Pair setSecond(Equals second) {
+        return new Pair(this.first, second);
+    }
 }
 
 class Map extends Collection {
-    Map() { super(); }
+    // TODO: implement class and all Collection methods
+    Map() {
+        super();
+    }
+    Option get(Equals key) {
+        return new None();
+    }
+    Boolean isEmpty() {
+        return new True();
+    }
+    Boolean contains_key(Equals key) {
+        return this.get(key).isSome();
+    }
+    Map insert(Equals key, Equals value) {
+        return new ConsMap(key, value, this);
+    }
+    Map map(Function f) {
+        return this;
+    }
 }
+
+class NilMap extends Map {
+    NilMap() {
+        super();
+    }
+}
+
+class ConsMap extends Map {
+    Equals key;
+    Equals value;
+    Map tail;
+    ConsMap(Equals key, Equals value, Map tail) {
+        super();
+        this.key = key;
+        this.value = value;
+        this.tail = tail;
+    }
+    Option get(Equals key) {
+        return (Option) this.key.equals(key).cond(
+            new Some(this.value),
+            this.tail.get(key)
+        );
+    }
+    Boolean isEmpty() {
+        return new False();
+    }
+    Functor map(Function f) {
+        return ((Map) this.tail.map(f))
+            .insert(this.key, (Equals) f.apply(this.value));
+    }
+
+}
+
 
 class Stack extends Collection {
     Stack() { super(); }
