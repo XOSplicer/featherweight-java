@@ -73,6 +73,7 @@ pub fn typecheck_term(ct: &ClassTable, gamma: &Gamma, term: &Term) -> Result<Cla
                     ))?;
                 let arg_term_types = arg_terms.iter().map(|arg_term| typecheck_term(ct, gamma, arg_term))
                     .collect::<Result<Vec<_>>>()?;
+                // TODO: check matching length of both lists
                 arg_term_types.iter().zip(method_type.arg_types.iter()).map(|(c, d)| {
                     match ct.is_subtype(c, d) {
                         Some(true) => Ok(()),
@@ -102,6 +103,7 @@ pub fn typecheck_term(ct: &ClassTable, gamma: &Gamma, term: &Term) -> Result<Cla
             ))?;
             let arg_term_types = arg_terms.iter().map(|arg_term| typecheck_term(ct, gamma, arg_term))
                 .collect::<Result<Vec<_>>>()?;
+            // TODO: check matching length of both lists
             arg_term_types.iter().zip(fields.map(|(field_type, _)| field_type)).map(|(c, d)| {
                     match ct.is_subtype(c, d) {
                         Some(true) => Ok(()),

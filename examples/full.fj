@@ -47,7 +47,7 @@ class Flipper1 extends Function1 {
     }
 }
 
-class Boolean extends Object {
+class Boolean extends Equals {
     Boolean() { super(); }
     // these should be abstract, but there are no abstract classes in fj
     Boolean and(Boolean other) {
@@ -60,6 +60,9 @@ class Boolean extends Object {
         return this;
     }
     Object cond(Object ifTrue, Object ifFalse) {
+        return this;
+    }
+    Boolean equals(Equals other) {
         return this;
     }
 }
@@ -78,6 +81,9 @@ class True extends Boolean {
     Object cond(Object ifTrue, Object ifFalse) {
         return ifTrue;
     }
+    Boolean equals(Equals other) {
+        return (Boolean) other;
+    }
 }
 
 class False extends Boolean {
@@ -93,6 +99,9 @@ class False extends Boolean {
     }
     Object cond(Object ifTrue, Object ifFalse) {
         return ifFalse;
+    }
+    Boolean equals(Equals other) {
+        return ((Boolean) other).not();
     }
 }
 
@@ -145,6 +154,12 @@ class Option extends Object {
     Option map(Function f) {
         return this;
     }
+    Boolean isNone() {
+        return new True();
+    }
+    Boolean isSome() {
+        return this.isNone().not();
+    }
 }
 
 class None extends Option {
@@ -164,6 +179,9 @@ class Some extends Option {
     }
     Option map(Function f) {
         return new Some(f.apply(this.inner));
+    }
+    Boolean isNone() {
+        return new False();
     }
 }
 
@@ -286,4 +304,59 @@ class Triple extends Pair {
         super(fst, snd);
         this.trd=trd;
     }
+}
+
+class Equals extends Object {
+    Equals() {
+        super();
+    }
+    Boolean equals(Equals other) {
+        return new False();
+    }
+}
+
+class Map extends Object {
+    Map() {
+        super();
+    }
+    Option get(Equals key) {
+        return new None();
+    }
+    Boolean isEmpty() {
+        return new True();
+    }
+    Boolean contains_key(Equals key) {
+        return this.get(key).isSome();
+    }
+    Map insert(Equals key, Object value) {
+        return new ConsMap(key, value, this);
+    }
+}
+
+class NilMap extends Map {
+    NilMap() {
+        super();
+    }
+}
+
+class ConsMap extends Map {
+    Equals key;
+    Object value;
+    Map tail;
+    ConsMap(Equals key, Object value, Map tail) {
+        super();
+        this.key = key;
+        this.value = value;
+        this.tail = tail;
+    }
+    Option get(Equals key) {
+        return (Option) this.key.equals(key).cond(
+            new Some(this.value),
+            this.tail.get(key)
+        );
+    }
+    Boolean isEmpty() {
+        return new False();
+    }
+
 }

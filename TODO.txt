@@ -1,0 +1,11 @@
+LIBRARY AST PARSED OK
+CLASS TABLE OK
+TYPECHECK for library OK
+Subtypes of object: [ClassName("A"), ClassName("B"), ClassName("Boolean"), ClassName("Cons"), ClassName("ConsMap"), ClassName("D"), ClassName("Equals"), ClassName("False"), ClassName("Flip"), ClassName("Flipper"), ClassName("Flipper1"), ClassName("Function"), ClassName("Function0"), ClassName("Function1"), ClassName("Function2"), ClassName("List"), ClassName("Map"), ClassName("Nil"), ClassName("NilMap"), ClassName("None"), ClassName("Option"), ClassName("Pair"), ClassName("Peano"), ClassName("Some"), ClassName("Succ"), ClassName("Triple"), ClassName("True"), ClassName("Zero")]
+TERM PARSED OK
+INPUT TERM new Map().insert()
+TYPECHECK types term as Map
+eval_full current term: new Map().insert()
+eval_full current term: new ConsMap(key,value,new Map(),)
+thread 'main' panicked at 'eval failed: Evaluation stuck, matching not implemented, term: key', src/main.rs:45:39
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace

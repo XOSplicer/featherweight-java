@@ -6,6 +6,18 @@ COMMENT = _{
 
 ident = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "_")* }
 
+script_input = _{
+    SOI
+    ~ (class_definition | eval_block)*
+    ~ EOI
+}
+
+eval_block = _{
+    "eval" ~ "{"
+    ~ term
+    ~ "}"
+}
+
 program = _{
     SOI ~ class_definition+ ~ EOI
 }

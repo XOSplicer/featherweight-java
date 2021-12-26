@@ -1,0 +1,4 @@
+new Map()
+    .insert(new True(), new A())
+    .insert(new False(), new B())
+    .get(new False())
