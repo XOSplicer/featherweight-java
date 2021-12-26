@@ -12,6 +12,13 @@ class Function extends Object {
     }
 }
 
+class Function2 extends Object {
+    Function2() { super(); }
+    /* abstract */ Object apply(Object arg0, Object arg1) {
+        return new Null();
+    }
+}
+
 class Identity extends Function {
     Identity() { super(); }
     Object apply(Object arg) {
@@ -61,13 +68,13 @@ class Boolean extends Equals {
     /* abstract */ Boolean equals(Equals other) {
         return this;
     }
-    Option than_some(Object ifTrue) {
+    Option than_some(Equals ifTrue) {
         return (Option) this.cond(new Some(ifTrue), new None());
     }
-    Option or_some(Object ifFalse) {
+    Option or_some(Equals ifFalse) {
         return (Option)  this.cond(new None(), new Some(ifFalse));
     }
-    Either either(Object ifTrue, Object ifFalse) {
+    Either either(Equals ifTrue, Equals ifFalse) {
         return (Either) this.cond(new Right(ifTrue), new Left(ifFalse));
     }
 }
@@ -119,14 +126,14 @@ class Not extends Function {
 
 class Functor extends Equals {
     Functor() { super(); }
-    /* abstract */ Object map(Function f) {
-        return new Null();
+    /* abstract */ Functor map(Function f) {
+        return this;
     }
 }
 
 class Monad extends Functor {
     Monad() { super(); }
-    /* abstract */ Monad unit(Object x) {
+    /* abstract */ Monad unit(Equals x) {
         return new Monad();
     }
     /* abstract */ Monad flatMap(Function f) {
@@ -138,23 +145,15 @@ class Collection extends Monad {
     Collection() { super(); }
 }
 
-class Iterator extends Monad {
-    Iterator() { super(); }
-    /* abstract */ Pair next() {
-        return new Pair(new None(), new Iterator());
-    }
-    // TODO: provided methods
-}
-
 class Option extends Collection {
     Option() { super(); }
-    Monad unit(Object x) {
+    Monad unit(Equals x) {
         return new Some(x);
     }
-    Object map(Function f) {
+    Functor map(Function f) {
         return new None();
     }
-    Object flatMap(Function f) {
+    Monad flatMap(Function f) {
         return new None();
     }
     Boolean isNone() {
@@ -163,32 +162,35 @@ class Option extends Collection {
     Boolean isSome() {
         return this.isNone().not();
     }
-    Object get() {
+    Equals get() {
         return new Null();
     }
-    Either right_or(Object left) {
+    Either right_or(Equals left) {
         return new Left(left);
     }
-    Either left_or(Object right) {
+    Either left_or(Equals right) {
         return new Right(right);
     }
 }
 
 class None extends Option {
     None() { super(); }
+    Boolean equals(Equals other) {
+        return ((Option) other).isNone();
+    }
 }
 
 class Some extends Option {
-    Object inner;
-    Some(Object inner) {
+    Equals inner;
+    Some(Equals inner) {
         super();
         this.inner = inner;
     }
-    Object map(Function f) {
-        return new Some(f.apply(this.inner));
+    Functor map(Function f) {
+        return new Some((Equals) f.apply(this.inner));
     }
-    Object flatMap(Function f) {
-        return f.apply(this.inner);
+    Monad flatMap(Function f) {
+        return (Monad) f.apply(this.inner);
     }
     Boolean isNone() {
         return new False();
@@ -196,18 +198,21 @@ class Some extends Option {
     Object get() {
         return this.inner;
     }
-    Either right_or(Object left) {
+    Either right_or(Equals left) {
         return new Right(this.inner);
     }
-    Either left_or(Object right) {
+    Either left_or(Equals right) {
         return new Left(this.inner);
     }
-
+    Boolean equals(Equals other) {
+        return ((Option) other).isSome()
+            .and(this.inner.equals(((Option) other).get()));
+    }
 }
 
 class Either extends Collection {
     Either() { super(); }
-    Monad unit(Object x) {
+    Monad unit(Equals x) {
         return new Right(x);
     }
     Boolean isLeft() {
@@ -234,39 +239,44 @@ class Either extends Collection {
 }
 
 class Left extends Either {
-    Object left;
-    Left(Object left) { super(); this.left = left; }
+    Equals left;
+    Left(Equals left) { super(); this.left = left; }
     Either mapLeft(Function f) {
-        return new Left(f.apply(this.left));
+        return new Left((Equals) f.apply(this.left));
     }
     Either mapBoth(Function fLeft, Function fRight) {
-        return new Left(fLeft.apply(this.left));
+        return new Left((Equals) fLeft.apply(this.left));
     }
     Option left() {
         return new Some(this.left);
     }
+    Boolean equals(Equals other) {
+        return this.left().equals(((Either) other).left());
+    }
 }
 
 class Right extends Either {
-    Object right;
-    Right(Object right) { super(); this.right = right; }
+    Equals right;
+    Right(Equals right) { super(); this.right = right; }
     Boolean isLeft() {
         return new False();
     }
     Either mapRight(Function f) {
-        return new Right(f.apply(this.right));
+        return new Right((Equals) f.apply(this.right));
     }
     Either mapBoth(Function fLeft, Function fRight) {
-        return new Right(fRight.apply(this.right));
+        return new Right((Equals) fRight.apply(this.right));
     }
     Option right() {
         return new Some(this.right);
+    }
+    Boolean equals(Equals other) {
+        return this.right().equals(((Either) other).right());
     }
 }
 
 class Peano extends Compare {
     Peano() { super(); }
-    // TODO: implement Compare
     Peano succ() {
         return new Succ(this);
     }
@@ -298,6 +308,9 @@ class Zero extends Peano {
     Boolean equals(Equals other) {
         return ((Peano) other).isZero();
     }
+    Boolean lessThan(Compare other) {
+        return ((Peano) other).isNonZero();
+    }
     Peano pred() {
         return new Zero();
     }
@@ -320,6 +333,9 @@ class Succ extends Peano {
     Succ(Peano pred) { super(); this.pred = pred; }
     Boolean equals(Equals other) {
         return this.pred().equals(((Peano) other).pred());
+    }
+    Boolean lessThan(Compare other) {
+        return this.pred().lessThan(((Peano) other).pred());
     }
     Peano pred() {
         return this.pred;
@@ -375,14 +391,81 @@ class Times extends Function {
 
 class List extends Collection {
     List() { super(); }
+    Option head() {
+        return new None();
+    }
+    List tail() {
+        return new Nil();
+    }
+    List prepend(Equals x) {
+        return new Cons(x, this);
+    }
+    List append(Equals x) {
+        return new Cons(x, new Nil());
+    }
+    List concat(List other) {
+        return other;
+    }
+    Object fold(Object init, Function2 f) {
+        return init;
+    }
+    Boolean isEmpty() {
+        return new True();
+    }
+    Functor map(Function f) {
+        return new Nil();
+    }
+    Monad unit(Equals x) {
+        return new Cons(x, new Nil());
+    }
+    Monad flatMap(Function f) {
+        return new Nil();
+    }
 }
 
 class Nil extends List {
     Nil() { super(); }
+    Boolean equals(Equals other) {
+        return ((List) other).isEmpty();
+    }
 }
 
 class Cons extends List {
-    Cons() { super(); }
+    Equals head;
+    List tail;
+    Cons(Equals head, List tail) {
+        super();
+        this.head = head;
+        this.tail = tail;
+    }
+    Option head() {
+        return new Some(this.head);
+    }
+    List tail() {
+        return this.tail;
+    }
+    Object fold(Object init, Function2 f) {
+        return this.tail.fold(f.apply(init, this.head), f);
+    }
+    Boolean isEmpty() {
+        return new False();
+    }
+    Boolean equals(Equals other) {
+        return this.head().equals(((List) other).head())
+            .and(this.tail.equals(((List) other).tail()));
+    }
+    Functor map(Function f) {
+        return ((List) this.tail.map(f)).prepend((Equals) f.apply(this.head));
+    }
+    Monad flatMap(Function f) {
+        return ((List) f.apply(this.head)).concat((List) this.tail.flatMap(f));
+    }
+    List append(Equals x) {
+        return new Cons(this.head, this.tail.append(x));
+    }
+    List concat(List other) {
+        return new Cons(this.head, this.tail.concat(other));
+    }
 }
 
 class Pair extends Object {

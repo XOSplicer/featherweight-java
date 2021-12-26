@@ -111,6 +111,9 @@ impl ClassTable {
             }
         }
 
+        // FIXME: check of correct override is not working as intended
+        // return type is ignored
+
         Ok(ct)
     }
 
