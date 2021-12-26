@@ -145,7 +145,7 @@ impl ClassTable {
         if rhs.is_object() && self.contains_class(lhs) {
             return Some(true);
         }
-        dbg!(lhs, rhs);
+        // dbg!(lhs, rhs);
         self.super_type_chain(lhs)
             .map(|mut super_types| super_types.any(|s| s == rhs))
     }

@@ -129,8 +129,8 @@ pub fn typecheck_term(ct: &ClassTable, gamma: &Gamma, term: &Term) -> Result<Cla
                 bail!("Class `{}` not in class table",&term_type.0);
             }
             // T-UpCast
-            dbg!(&to_class_name);
-            dbg!(&term_type);
+            // dbg!(&to_class_name);
+            // dbg!(&term_type);
 
             if ct.is_subtype(&term_type, to_class_name).unwrap() {
                 return Ok(to_class_name.clone())

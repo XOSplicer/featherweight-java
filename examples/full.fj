@@ -231,7 +231,7 @@ class Succ extends Peano {
         return this.pred.plus(other).succ();
     }
     Peano minus(Peano other) {
-        return other.isZero().cond(this, this.pred().minus(other.pred()));
+        return (Peano) other.isZero().cond(this, this.pred().minus(other.pred()));
     }
 }
 
