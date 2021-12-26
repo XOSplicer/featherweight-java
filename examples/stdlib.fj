@@ -1,0 +1,410 @@
+class Null extends Equals {
+    Null() { super(); }
+    Boolean equals(Equals other) {
+        return new True();
+    }
+}
+
+class Function extends Object {
+    Function() { super(); }
+    /* abstract */ Object apply(Object arg) {
+        return new Null();
+    }
+}
+
+class Identity extends Function {
+    Identity() { super(); }
+    Object apply(Object arg) {
+        return arg;
+    }
+}
+
+class Equals extends Object {
+    Equals() { super(); }
+    // NOTE: only same type is valid here
+    Boolean equals(Equals other) {
+        return new False();
+    }
+}
+
+class Compare extends Equals {
+    Compare() { super(); }
+    // NOTE: only same type is valid here
+    /* abstract */ Boolean lessThan(Compare other) {
+        return new False();
+    }
+    Boolean lessThanEqual(Compare other) {
+        return this.lessThan(other).or(this.equals(other));
+    }
+    Boolean greaterThan(Compare other) {
+        return this.lessThanEqual(other).not();
+    }
+    Boolean greaterThanEquals(Compare other) {
+        return this.lessThan().not();
+    }
+}
+
+class Boolean extends Equals {
+    Boolean() { super(); }
+    /* abstract */ Boolean and(Boolean other) {
+        return this;
+    }
+    /* abstract */ Boolean or(Boolean other) {
+        return this;
+    }
+    /* abstract */ Boolean not() {
+        return this;
+    }
+    /* abstract */ Object cond(Object ifTrue, Object ifFalse) {
+        return new Null();
+    }
+    /* abstract */ Boolean equals(Equals other) {
+        return this;
+    }
+    Option than_some(Object ifTrue) {
+        return (Option) this.cond(new Some(ifTrue), new None());
+    }
+    Option or_some(Object ifFalse) {
+        return (Option)  this.cond(new None(), new Some(ifFalse));
+    }
+    Either either(Object ifTrue, Object ifFalse) {
+        return (Either) this.cond(new Right(ifTrue), new Left(ifFalse));
+    }
+}
+
+class True extends Boolean {
+    True() { super(); }
+    Boolean and(Boolean other) {
+        return other;
+    }
+    Boolean or(Boolean other) {
+        return new True();
+    }
+    Boolean not() {
+        return new False();
+    }
+    Object cond(Object ifTrue, Object ifFalse) {
+        return ifTrue;
+    }
+    Boolean equals(Equals other) {
+        return (Boolean) other;
+    }
+}
+
+class False extends Boolean {
+    False() { super(); }
+    Boolean and(Boolean other) {
+        return new False();
+    }
+    Boolean or(Boolean other) {
+        return other;
+    }
+    Boolean not() {
+        return new True();
+    }
+    Object cond(Object ifTrue, Object ifFalse) {
+        return ifFalse;
+    }
+    Boolean equals(Equals other) {
+        return ((Boolean) other).not();
+    }
+}
+
+class Not extends Function {
+    Not() { super(); }
+    Object apply(Object arg) {
+        return ((Boolean) arg).not();
+    }
+}
+
+class Functor extends Equals {
+    Functor() { super(); }
+    /* abstract */ Object map(Function f) {
+        return new Null();
+    }
+}
+
+class Monad extends Functor {
+    Monad() { super(); }
+    /* abstract */ Monad unit(Object x) {
+        return new Monad();
+    }
+    /* abstract */ Monad flatMap(Function f) {
+        return new Monad();
+    }
+}
+
+class Collection extends Monad {
+    Collection() { super(); }
+}
+
+class Iterator extends Monad {
+    Iterator() { super(); }
+    /* abstract */ Pair next() {
+        return new Pair(new None(), new Iterator());
+    }
+    // TODO: provided methods
+}
+
+class Option extends Collection {
+    Option() { super(); }
+    Monad unit(Object x) {
+        return new Some(x);
+    }
+    Object map(Function f) {
+        return new None();
+    }
+    Object flatMap(Function f) {
+        return new None();
+    }
+    Boolean isNone() {
+        return new True();
+    }
+    Boolean isSome() {
+        return this.isNone().not();
+    }
+    Object get() {
+        return new Null();
+    }
+    Either right_or(Object left) {
+        return new Left(left);
+    }
+    Either left_or(Object right) {
+        return new Right(right);
+    }
+}
+
+class None extends Option {
+    None() { super(); }
+}
+
+class Some extends Option {
+    Object inner;
+    Some(Object inner) {
+        super();
+        this.inner = inner;
+    }
+    Object map(Function f) {
+        return new Some(f.apply(this.inner));
+    }
+    Object flatMap(Function f) {
+        return f.apply(this.inner);
+    }
+    Boolean isNone() {
+        return new False();
+    }
+    Object get() {
+        return this.inner;
+    }
+    Either right_or(Object left) {
+        return new Right(this.inner);
+    }
+    Either left_or(Object right) {
+        return new Left(this.inner);
+    }
+
+}
+
+class Either extends Collection {
+    Either() { super(); }
+    Monad unit(Object x) {
+        return new Right(x);
+    }
+    Boolean isLeft() {
+        return new True();
+    }
+    Boolean isRight() {
+        return this.isLeft().not();
+    }
+    Either mapLeft(Function f) {
+        return this;
+    }
+    Either mapRight(Function f) {
+        return this;
+    }
+    /* abstract */ Either mapBoth(Function fLeft, Function fRight) {
+        return this;
+    }
+    Option left() {
+        return new None();
+    }
+    Option right() {
+        return new None();
+    }
+}
+
+class Left extends Either {
+    Object left;
+    Left(Object left) { super(); this.left = left; }
+    Either mapLeft(Function f) {
+        return new Left(f.apply(this.left));
+    }
+    Either mapBoth(Function fLeft, Function fRight) {
+        return new Left(fLeft.apply(this.left));
+    }
+    Option left() {
+        return new Some(this.left);
+    }
+}
+
+class Right extends Either {
+    Object right;
+    Right(Object right) { super(); this.right = right; }
+    Boolean isLeft() {
+        return new False();
+    }
+    Either mapRight(Function f) {
+        return new Right(f.apply(this.right));
+    }
+    Either mapBoth(Function fLeft, Function fRight) {
+        return new Right(fRight.apply(this.right));
+    }
+    Option right() {
+        return new Some(this.right);
+    }
+}
+
+class Peano extends Compare {
+    Peano() { super(); }
+    // TODO: implement Compare
+    Peano succ() {
+        return new Succ(this);
+    }
+    Peano pred() {
+        return this;
+    }
+    Peano plus(Peano other) {
+        return this;
+    }
+    Peano minus(Peano other) {
+        return this;
+    }
+    Peano times(Peano other) {
+        return this;
+    }
+    Boolean isZero() {
+        return new False();
+    }
+    Boolean isNonZero() {
+        return this.isZero().not();
+    }
+    Boolean isOne() {
+        return this.isNonZero().and(this.pred().isZero());
+    }
+}
+
+class Zero extends Peano {
+    Zero() { super(); }
+    Boolean equals(Equals other) {
+        return ((Peano) other).isZero();
+    }
+    Peano pred() {
+        return new Zero();
+    }
+    Peano plus(Peano other) {
+        return other;
+    }
+    Peano minus(Peano other) {
+        return new Zero();
+    }
+    Peano times(Peano other) {
+        return new Zero();
+    }
+    Boolean isZero() {
+        return new True();
+    }
+}
+
+class Succ extends Peano {
+    Peano pred;
+    Succ(Peano pred) { super(); this.pred = pred; }
+    Boolean equals(Equals other) {
+        return this.pred().equals(((Peano) other).pred());
+    }
+    Peano pred() {
+        return this.pred;
+    }
+    Peano plus(Peano other) {
+        return this.pred.plus(other).succ();
+    }
+    Peano minus(Peano other) {
+        return (Peano) other.isZero().cond(this, this.pred().minus(other.pred()));
+    }
+    Peano times(Peano other) {
+        return this.pred().times(other).plus(other);
+    }
+}
+
+class Increase extends Function {
+    Increase() { super(); }
+    Object apply(Object arg) {
+        return ((Peano) arg).succ();
+    }
+}
+
+class Decrease extends Function {
+    Decrease() { super(); }
+    Object apply(Object arg) {
+        return ((Peano) arg).pred();
+    }
+}
+
+class Plus extends Function {
+    Peano amount;
+    Plus(Peano amount) { super(); this.amount = amount; }
+    Object apply(Object arg) {
+        return ((Peano) arg).plus(this.amount);
+    }
+}
+
+class Minus extends Function {
+    Peano amount;
+    Minus(Peano amount) { super(); this.amount = amount; }
+    Object apply(Object arg) {
+        return ((Peano) arg).minus(this.amount);
+    }
+}
+
+class Times extends Function {
+    Peano amount;
+    Times(Peano amount) { super(); this.amount = amount; }
+    Object apply(Object arg) {
+        return ((Peano) arg).times(this.amount);
+    }
+}
+
+class List extends Collection {
+    List() { super(); }
+}
+
+class Nil extends List {
+    Nil() { super(); }
+}
+
+class Cons extends List {
+    Cons() { super(); }
+}
+
+class Pair extends Object {
+    Pair() { super(); }
+}
+
+class Map extends Collection {
+    Map() { super(); }
+}
+
+class Stack extends Collection {
+    Stack() { super(); }
+}
+
+class Queue extends Collection {
+    Queue() { super(); }
+}
+
+class BinaryTree extends Collection {
+    BinaryTree() { super(); }
+}
+
+class Graph extends Object {
+    Graph() { super(); }
+}

@@ -9,3 +9,45 @@ eval_full current term: new Map().insert()
 eval_full current term: new ConsMap(key,value,new Map(),)
 thread 'main' panicked at 'eval failed: Evaluation stuck, matching not implemented, term: key', src/main.rs:45:39
 note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+// STDLIB
+() Equals extends Object
+() Compare extends Equals
+() Function extends Object
+()
+() Boolean extends Equals
+() False extends Boolean
+() True extends Boolean
+()
+() Functor extends Equals
+() Monad extends Equals
+() Collection extends Equals
+() Iterator extends Monad
+()
+() Option extends Collection
+() None extends Option
+() Some extends Option
+()
+() Either extends Collection
+() Left extends Either
+() Right extends
+()
+() Peano extends Compare
+() Zero extends Peano
+() Succ extends Peano
+()
+() List extends Collection
+() Nil extends List
+() Cons extends List
+()
+() Pair extends Object
+()
+() Map extends Collection
+()
+() Stack extends Collection
+()
+() Queue extends Collection
+()
+() BinaryTree extends Collection
+()
+() Graph extends Object

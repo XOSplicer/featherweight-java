@@ -39,7 +39,7 @@ fn main(args: Args) -> anyhow::Result<()> {
     println!("TERM PARSED OK");
     println!("INPUT TERM {}", &term);
 
-    let term_type = typecheck_term(&ct, &Gamma::empty(), &term)?;
+    let term_type = typecheck_term(&ct, &Gamma::empty(), &term).expect("Typechecking for input term failed");
     println!("TYPECHECK types term as {}", &term_type.0);
 
     let result = eval_full(&ct, term).expect("eval failed");
