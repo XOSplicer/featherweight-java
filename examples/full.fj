@@ -331,6 +331,9 @@ class Map extends Object {
     Map insert(Equals key, Object value) {
         return new ConsMap(key, value, this);
     }
+    Map map(Function f) {
+        return this;
+    }
 }
 
 class NilMap extends Map {
@@ -358,5 +361,16 @@ class ConsMap extends Map {
     Boolean isEmpty() {
         return new False();
     }
+    Map map(Function f) {
+        return this.tail.map(f)
+            .insert(this.key, f.apply(this.value));
+    }
 
+}
+
+class Not extends Function {
+    Not() { super(); }
+    Object apply(Object arg) {
+        return ((Boolean) arg).not();
+    }
 }
