@@ -186,11 +186,17 @@ class Peano extends Object {
     Peano minus(Peano other) {
         return this;
     }
+    Peano times(Peano other) {
+        return this;
+    }
     Boolean isZero() {
         return new False();
     }
     Boolean isNonZero() {
         return this.isZero().not();
+    }
+    Boolean isOne() {
+        return this.isNonZero().and(this.pred().isZero());
     }
 }
 
@@ -208,6 +214,9 @@ class Zero extends Peano {
         return other;
     }
     Peano minus(Peano other) {
+        return new Zero();
+    }
+    Peano times(Peano other) {
         return new Zero();
     }
     Boolean isZero() {
@@ -232,6 +241,9 @@ class Succ extends Peano {
     }
     Peano minus(Peano other) {
         return (Peano) other.isZero().cond(this, this.pred().minus(other.pred()));
+    }
+    Peano times(Peano other) {
+        return this.pred().times(other).plus(other);
     }
 }
 

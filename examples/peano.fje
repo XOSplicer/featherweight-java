@@ -2,5 +2,6 @@
 
 // new Zero().succ().succ().succ().minus(new Zero().succ().succ())
 
-new Zero().succ().succ().succ().minus(new Zero().succ().succ()).isNonZero()
+// new Zero().succ().succ().succ().minus(new Zero().succ().succ()).isNonZero()
+new Zero().succ().succ().succ().times(new Zero().succ().succ())
 
