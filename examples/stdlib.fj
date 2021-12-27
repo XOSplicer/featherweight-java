@@ -143,6 +143,9 @@ class Monad extends Functor {
 
 class Collection extends Monad {
     Collection() { super(); }
+    /* abstract */ Peano length() {
+        return new Zero();
+    }
 }
 
 class Option extends Collection {
@@ -208,9 +211,13 @@ class Some extends Option {
         return ((Option) other).isSome()
             .and(this.inner.equals(((Option) other).get()));
     }
+    Peano length() {
+        return new Zero().succ();
+    }
 }
 
-class Either extends Collection {
+class Either extends Monad {
+    // TODO: implement flatMap, map
     Either() { super(); }
     Monad unit(Equals x) {
         return new Right(x);
@@ -272,6 +279,9 @@ class Right extends Either {
     }
     Boolean equals(Equals other) {
         return this.right().equals(((Either) other).right());
+    }
+    Peano length() {
+        return new Zero();
     }
 }
 
@@ -421,6 +431,9 @@ class List extends Collection {
     Monad flatMap(Function f) {
         return new Nil();
     }
+    Peano length() {
+        return new Zero();
+    }
 }
 
 class Nil extends List {
@@ -466,6 +479,9 @@ class Cons extends List {
     List concat(List other) {
         return new Cons(this.head, this.tail.concat(other));
     }
+    Peano length() {
+        return this.tail.length().succ();
+    }
 }
 
 class Pair extends Equals {
@@ -507,14 +523,25 @@ class Map extends Collection {
     Map insert(Equals key, Equals value) {
         return new ConsMap(key, value, this);
     }
-    Map map(Function f) {
+    Map merge(Map other) {
+        return other;
+    }
+    Functor map(Function f) {
+        return this;
+    }
+    Monad unit(Equals pair) {
+        return new ConsMap(((Pair) pair).first, ((Pair) pair).second, new NilMap());
+    }
+    Monad flatMap(Function f) {
+        // TODO: implement correctly
         return this;
     }
 }
 
 class NilMap extends Map {
-    NilMap() {
-        super();
+    NilMap() { super(); }
+    Boolean equals(Equals other) {
+        return ((Map) other).isEmpty();
     }
 }
 
@@ -541,7 +568,18 @@ class ConsMap extends Map {
         return ((Map) this.tail.map(f))
             .insert(this.key, (Equals) f.apply(this.value));
     }
+    Boolean equals(Equals other) {
+        // TODO: implement correctly
+        return new False();
+    }
 
+    Peano length() {
+        return this.tail.length().succ();
+    }
+
+    Map merge(Map other) {
+        return new ConsMap(this.key, this.value, this.tail.merge(other));
+    }
 }
 
 

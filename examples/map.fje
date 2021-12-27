@@ -1,5 +1,6 @@
-new Map()
+((Map) new Map()
     .insert(new True(), new True())
     .insert(new False(), new False())
     .map(new Not())
+)
     .get(new False())
