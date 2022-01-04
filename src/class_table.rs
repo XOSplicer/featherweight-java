@@ -1,22 +1,21 @@
-use crate::ast::*;
-use anyhow::{bail, Result};
+use crate::{ast::*, error::ClassTableError};
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Clone)]
 pub struct ClassTable(BTreeMap<ClassName, ClassDefinition>);
 
 impl ClassTable {
-    pub fn try_from_ast(ast: Ast) -> Result<Self> {
+    pub fn try_from_ast(ast: Ast) -> Result<Self, ClassTableError> {
         let mut map = BTreeMap::new();
 
         // transform ast to class table
         // and check that no class is defined more than once
         for class in ast.class_definitions.into_iter() {
             if class.name.is_object() {
-                bail!("Classes may not be named `Object`.");
+                Err(ClassTableError::ClassNamedObject)?;
             }
             if let Some(c) = map.insert(class.name.clone(), class) {
-                bail!("Class `{}` is defined twice.", &c.name);
+                Err(ClassTableError::ClassDefinedTwice(c.name))?;
             }
         }
 
@@ -24,13 +23,12 @@ impl ClassTable {
 
         // check that each supertype is defined
         for class in ct.inner().values() {
-            let super_type = &class.super_type;
-            if !(ct.inner().contains_key(super_type) || super_type.is_object()) {
-                bail!(
-                    "The supertype `{}` of class `{}` is not defined.",
-                    &super_type,
-                    &class.name
-                );
+            let supertype = &class.super_type;
+            if !(ct.inner().contains_key(supertype) || supertype.is_object()) {
+                Err(ClassTableError::SupertypeUndefined(
+                    supertype.clone(),
+                    class.name.clone(),
+                ))?;
             }
         }
 
@@ -47,57 +45,46 @@ impl ClassTable {
         // - check that method/ctor args are not named `this`
         for class in ct.inner().values() {
             if ct.super_type_chain(&class.name).unwrap().is_cyclic() {
-                bail!(
-                    "The supertype chain of class `{}` contains a cycle",
-                    &class.name
-                )
+                Err(ClassTableError::CyclicSupertype(class.name.clone()))?;
             }
             if !class.has_correct_ctor_name() {
-                bail!(
-                    "Contructor of class `{}` is named `{}`, but should be `{}`",
-                    &class.name,
-                    &class.constructor.name,
-                    &class.name,
-                )
+                Err(ClassTableError::IncorrectConstructorName(
+                    class.name.clone(),
+                    class.constructor.name.clone(),
+                ))?;
             }
             if !class.has_correct_ctor_init() {
-                bail!(
-                    "Contructor of class `{}` does not correctly initialize all fields.",
-                    &class.name,
-                )
+                Err(ClassTableError::IncorrectContstructorInit(
+                    class.name.clone(),
+                ))?;
             }
             if !class.has_unique_field_names() {
-                bail!("Class `{}` does not have unique field names.", &class.name,)
+                Err(ClassTableError::NonUniqueFields(class.name.clone()))?;
             }
             if !class.has_unique_method_names() {
-                bail!("Class `{}` does not have unique method names.", &class.name,)
+                Err(ClassTableError::NonUniqueMethodNames(class.name.clone()))?;
             }
-
             if !class.has_only_valid_field_names() {
-                bail!("Class `{}` may not contain `this` as a field.", &class.name,)
+                Err(ClassTableError::FieldNamedThis(class.name.clone()))?;
             }
-
             if !class.constructor.has_only_valid_argument_names() {
-                bail!(
-                    "Contructor of class `{}` may not contain `this` as an argument.",
-                    &class.name,
-                )
+                Err(ClassTableError::ConstructorArgumentNamedThis(
+                    class.name.clone(),
+                ))?;
             }
 
             for method in class.methods.iter() {
                 if !method.has_unique_argument_names() {
-                    bail!(
-                        "Method `{}` in class `{}` does not have unique argument names.",
-                        &method.method_name,
-                        &class.name,
-                    )
+                    Err(ClassTableError::NonUniqueMethodArgumentNames(
+                        method.method_name.clone(),
+                        class.name.clone(),
+                    ))?;
                 }
                 if !method.has_only_valid_argument_names() {
-                    bail!(
-                        "Method `{}` in class `{}` may not contain `this` as an argument",
-                        &method.method_name,
-                        &class.name,
-                    )
+                    Err(ClassTableError::MethodArgumentNamedThis(
+                        method.method_name.clone(),
+                        class.name.clone(),
+                    ))?;
                 }
             }
         }
