@@ -217,7 +217,6 @@ class Some extends Option {
 }
 
 class Either extends Monad {
-    // TODO: implement flatMap, map
     Either() { super(); }
     Monad unit(Equals x) {
         return new Right(x);
@@ -242,6 +241,12 @@ class Either extends Monad {
     }
     Option right() {
         return new None();
+    }
+    Functor map(Function f) {
+        return this.mapRight(f);
+    }
+    Mondad flatMap(Function f) {
+        return this;
     }
 }
 
@@ -282,6 +287,9 @@ class Right extends Either {
     }
     Peano length() {
         return new Zero();
+    }
+    Mondad flatMap(Function f) {
+        return (Monad) f.apply(this.right);
     }
 }
 
@@ -507,7 +515,6 @@ class Pair extends Equals {
 }
 
 class Map extends Collection {
-    // TODO: implement class and all Collection methods
     Map() {
         super();
     }
@@ -533,7 +540,6 @@ class Map extends Collection {
         return new ConsMap(((Pair) pair).first, ((Pair) pair).second, new NilMap());
     }
     Monad flatMap(Function f) {
-        // TODO: implement correctly
         return this;
     }
 }
@@ -580,21 +586,8 @@ class ConsMap extends Map {
     Map merge(Map other) {
         return new ConsMap(this.key, this.value, this.tail.merge(other));
     }
-}
 
-
-class Stack extends Collection {
-    Stack() { super(); }
-}
-
-class Queue extends Collection {
-    Queue() { super(); }
-}
-
-class BinaryTree extends Collection {
-    BinaryTree() { super(); }
-}
-
-class Graph extends Object {
-    Graph() { super(); }
+    Monad flatMap(Function f) {
+        return ((Map) f.apply(new Pair(this.key, this.value)).merge(this.tail.flatMap(f));
+    }
 }
