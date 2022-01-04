@@ -2,15 +2,16 @@
 
 use crate::evaluation::eval_full;
 use anyhow;
+use anyhow::Context;
 use std::path::PathBuf;
 use typecheck::{typecheck_ast, typecheck_term, Gamma};
 
 mod ast;
 mod class_table;
+mod error;
 mod evaluation;
 mod parser;
 mod typecheck;
-mod error;
 
 #[derive(structopt::StructOpt)]
 struct Args {
@@ -22,11 +23,11 @@ struct Args {
 
 #[paw::main]
 fn main(args: Args) -> anyhow::Result<()> {
-    let input = std::fs::read_to_string(args.fj_lib_file).expect("could not read file");
-    let ast = parser::parse(&input).expect("parsing failed");
+    let input = std::fs::read_to_string(args.fj_lib_file).context("could not read file")?;
+    let ast = parser::parse(&input).context("parsing failed")?;
     println!("LIBRARY AST PARSED OK");
-    let ct =
-        class_table::ClassTable::try_from_ast(ast.clone()).expect("could not build class table");
+    let ct = class_table::ClassTable::try_from_ast(ast.clone())
+        .context("could not build class table")?;
     println!("CLASS TABLE OK");
 
     typecheck_ast(&ct, &ast)?;
@@ -39,16 +40,16 @@ fn main(args: Args) -> anyhow::Result<()> {
         .collect::<Vec<_>>();
     println!("Subtypes of object: {:?}", &subtypes_of_object);
 
-    let input = std::fs::read_to_string(args.fj_expression_file).expect("could not read file");
-    let term = parser::parse_eval_input(&input).expect("parsing failed");
+    let input = std::fs::read_to_string(args.fj_expression_file).context("could not read file")?;
+    let term = parser::parse_eval_input(&input).context("parsing failed")?;
     println!("TERM PARSED OK");
     println!("INPUT TERM {}", &term);
 
-    let term_type =
-        typecheck_term(&ct, &Gamma::empty(), &term).expect("Typechecking for input term failed");
+    let term_type = typecheck_term(&ct, &Gamma::empty(), &term)
+        .context("Typechecking for input term failed")?;
     println!("TYPECHECK types term as {}", &term_type);
 
-    let result = eval_full(&ct, term).expect("eval failed");
+    let result = eval_full(&ct, term).context("eval failed")?;
     println!("EVALUATION RESULT {}", &result);
 
     Ok(())
