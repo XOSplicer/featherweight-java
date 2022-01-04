@@ -16,13 +16,19 @@ pub struct ClassDefinition {
     pub methods: Vec<MethodDefinition>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::Display, derive_more::Into,
+)]
 pub struct ClassName(pub String);
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::Display, derive_more::Into,
+)]
 pub struct FieldName(pub String);
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, derive_more::Display, derive_more::Into,
+)]
 pub struct MethodName(pub String);
 
 #[derive(Debug, Clone)]
@@ -114,16 +120,16 @@ impl Display for Term {
             Term::Cast(Cast {
                 to_class_name,
                 term,
-            }) => write!(f, "(({}) {})", &to_class_name.0, &term),
+            }) => write!(f, "(({}) {})", &to_class_name, &term),
             Term::FieldAccess(FieldAccess { object_term, field }) => {
-                write!(f, "{}.{}", &object_term, &field.0)
+                write!(f, "{}.{}", &object_term, &field)
             }
             Term::MethodCall(MethodCall {
                 method_name,
                 arg_terms,
                 object_term,
             }) => {
-                write!(f, "{}.{}(", &object_term, &method_name.0)?;
+                write!(f, "{}.{}(", &object_term, &method_name)?;
                 for t in arg_terms {
                     write!(f, "{},", t)?;
                 }
@@ -133,13 +139,13 @@ impl Display for Term {
                 class_name,
                 arg_terms,
             }) => {
-                write!(f, "new {}(", &class_name.0)?;
+                write!(f, "new {}(", &class_name)?;
                 for t in arg_terms {
                     write!(f, "{},", t)?;
                 }
                 write!(f, ")")
             }
-            Term::Variable(x) => write!(f, "{}", &x.0),
+            Term::Variable(x) => write!(f, "{}", &x),
         }
     }
 }

@@ -16,7 +16,7 @@ impl ClassTable {
                 bail!("Classes may not be named `Object`.");
             }
             if let Some(c) = map.insert(class.name.clone(), class) {
-                bail!("Class `{}` is defined twice.", &c.name.0);
+                bail!("Class `{}` is defined twice.", &c.name);
             }
         }
 
@@ -28,8 +28,8 @@ impl ClassTable {
             if !(ct.inner().contains_key(super_type) || super_type.is_object()) {
                 bail!(
                     "The supertype `{}` of class `{}` is not defined.",
-                    &super_type.0,
-                    &class.name.0
+                    &super_type,
+                    &class.name
                 );
             }
         }
@@ -49,47 +49,38 @@ impl ClassTable {
             if ct.super_type_chain(&class.name).unwrap().is_cyclic() {
                 bail!(
                     "The supertype chain of class `{}` contains a cycle",
-                    &class.name.0
+                    &class.name
                 )
             }
             if !class.has_correct_ctor_name() {
                 bail!(
                     "Contructor of class `{}` is named `{}`, but should be `{}`",
-                    &class.name.0,
-                    &class.constructor.name.0,
-                    &class.name.0,
+                    &class.name,
+                    &class.constructor.name,
+                    &class.name,
                 )
             }
             if !class.has_correct_ctor_init() {
                 bail!(
                     "Contructor of class `{}` does not correctly initialize all fields.",
-                    &class.name.0,
+                    &class.name,
                 )
             }
             if !class.has_unique_field_names() {
-                bail!(
-                    "Class `{}` does not have unique field names.",
-                    &class.name.0,
-                )
+                bail!("Class `{}` does not have unique field names.", &class.name,)
             }
             if !class.has_unique_method_names() {
-                bail!(
-                    "Class `{}` does not have unique method names.",
-                    &class.name.0,
-                )
+                bail!("Class `{}` does not have unique method names.", &class.name,)
             }
 
             if !class.has_only_valid_field_names() {
-                bail!(
-                    "Class `{}` may not contain `this` as a field.",
-                    &class.name.0,
-                )
+                bail!("Class `{}` may not contain `this` as a field.", &class.name,)
             }
 
             if !class.constructor.has_only_valid_argument_names() {
                 bail!(
                     "Contructor of class `{}` may not contain `this` as an argument.",
-                    &class.name.0,
+                    &class.name,
                 )
             }
 
@@ -97,15 +88,15 @@ impl ClassTable {
                 if !method.has_unique_argument_names() {
                     bail!(
                         "Method `{}` in class `{}` does not have unique argument names.",
-                        &method.method_name.0,
-                        &class.name.0,
+                        &method.method_name,
+                        &class.name,
                     )
                 }
                 if !method.has_only_valid_argument_names() {
                     bail!(
                         "Method `{}` in class `{}` may not contain `this` as an argument",
-                        &method.method_name.0,
-                        &class.name.0,
+                        &method.method_name,
+                        &class.name,
                     )
                 }
             }
@@ -280,6 +271,12 @@ impl ClassName {
     }
 }
 
+impl FieldName {
+    pub fn is_this(&self) -> bool {
+        self.0 == "this"
+    }
+}
+
 pub struct SuperTypeChain<'a> {
     ct: &'a ClassTable,
     last: &'a ClassName,
@@ -367,7 +364,7 @@ impl ClassDefinition {
         self.fields
             .iter()
             .map(|(_, arg_name)| arg_name)
-            .all(|arg_name| arg_name.0 != "this")
+            .all(|arg_name| !arg_name.is_this())
     }
 }
 
@@ -385,7 +382,7 @@ impl MethodDefinition {
         self.args
             .iter()
             .map(|(_, arg_name)| arg_name)
-            .all(|arg_name| arg_name.0 != "this")
+            .all(|arg_name| !arg_name.is_this())
     }
 }
 
@@ -394,6 +391,6 @@ impl Constructor {
         self.args
             .iter()
             .map(|(_, arg_name)| arg_name)
-            .all(|arg_name| arg_name.0 != "this")
+            .all(|arg_name| !arg_name.is_this())
     }
 }

@@ -39,22 +39,19 @@ pub fn typecheck_term(ct: &ClassTable, gamma: &Gamma, term: &Term) -> Result<Cla
             .inner
             .get(x)
             .cloned()
-            .ok_or(anyhow!("Field `{}` not typed by gamma", &x.0)),
+            .ok_or(anyhow!("Field `{}` not typed by gamma", &x)),
         // T-Field
         Term::FieldAccess(FieldAccess { field, object_term }) => {
             typecheck_term(ct, gamma, object_term).and_then(|object_term_type| {
                 ct.fields(&object_term_type)
-                    .ok_or(anyhow!(
-                        "Class `{}` not in class table",
-                        &object_term_type.0
-                    ))?
+                    .ok_or(anyhow!("Class `{}` not in class table", &object_term_type))?
                     .find(|(_, field_name)| field_name == field)
                     .map(|(class_name, _)| class_name)
                     .cloned()
                     .ok_or(anyhow!(
                         "Field `{}` not present in class `{}`.",
-                        &field.0,
-                        &object_term_type.0
+                        &field,
+                        &object_term_type
                     ))
             })
         }
@@ -68,8 +65,8 @@ pub fn typecheck_term(ct: &ClassTable, gamma: &Gamma, term: &Term) -> Result<Cla
                 let method_type = ct.method_type(&method_name, &object_term_type)
                     .ok_or(anyhow!(
                         "Method `{}` not present in class `{}`.",
-                        &method_name.0,
-                        &object_term_type.0
+                        &method_name,
+                        &object_term_type
                     ))?;
                 let arg_term_types = arg_terms.iter().map(|arg_term| typecheck_term(ct, gamma, arg_term))
                     .collect::<Result<Vec<_>>>()?;
@@ -79,15 +76,15 @@ pub fn typecheck_term(ct: &ClassTable, gamma: &Gamma, term: &Term) -> Result<Cla
                         Some(true) => Ok(()),
                         Some(false) => Err(anyhow!(
                             "Argument type `{}` is not subtype of declared type `{}` in method `{}` of class `{}`.",
-                            &c.0,
-                            &d.0,
-                            &method_name.0,
-                            &object_term_type.0
+                            &c,
+                            &d,
+                            &method_name,
+                            &object_term_type
                         )),
                         None => Err(anyhow!(
                             "Class `{}` or class `{}` not in class table",
-                            &c.0,
-                            &d.0
+                            &c,
+                            &d
                         ))
                     }
                 }).collect::<Result<()>>()?;
@@ -95,13 +92,16 @@ pub fn typecheck_term(ct: &ClassTable, gamma: &Gamma, term: &Term) -> Result<Cla
             })
         }
         // T-New
-        Term::NewCall(NewCall { class_name, arg_terms }) => {
-            let fields = ct.fields(class_name)
-            .ok_or(anyhow!(
-                "Class `{}` not in class table",
-                &class_name.0
-            ))?;
-            let arg_term_types = arg_terms.iter().map(|arg_term| typecheck_term(ct, gamma, arg_term))
+        Term::NewCall(NewCall {
+            class_name,
+            arg_terms,
+        }) => {
+            let fields = ct
+                .fields(class_name)
+                .ok_or(anyhow!("Class `{}` not in class table", &class_name))?;
+            let arg_term_types = arg_terms
+                .iter()
+                .map(|arg_term| typecheck_term(ct, gamma, arg_term))
                 .collect::<Result<Vec<_>>>()?;
             // TODO: check matching length of both lists
             arg_term_types.iter().zip(fields.map(|(field_type, _)| field_type)).map(|(c, d)| {
@@ -109,46 +109,60 @@ pub fn typecheck_term(ct: &ClassTable, gamma: &Gamma, term: &Term) -> Result<Cla
                         Some(true) => Ok(()),
                         Some(false) => Err(anyhow!(
                             "Argument type `{}` is not subtype of declared type `{}` in constructor of class `{}`.",
-                            &c.0,
-                            &d.0,
-                            &class_name.0
+                            &c,
+                            &d,
+                            &class_name
                         )),
                         None => Err(anyhow!(
                             "Class `{}` or class `{}` not in class table",
-                            &c.0,
-                            &d.0
+                            &c,
+                            &d
                         ))
                     }
                 }).collect::<Result<()>>()?;
             Ok(class_name.clone())
         }
-        Term::Cast(Cast { to_class_name, term }) => {
+        Term::Cast(Cast {
+            to_class_name,
+            term,
+        }) => {
             let term_type = typecheck_term(ct, gamma, term)?;
             if !ct.contains_class(to_class_name) {
-                bail!("Class `{}` not in class table",&to_class_name.0);
+                bail!("Class `{}` not in class table", &to_class_name);
             }
             if !ct.contains_class(&term_type) {
-                bail!("Class `{}` not in class table",&term_type.0);
+                bail!("Class `{}` not in class table", &term_type);
             }
             // T-UpCast
             // dbg!(&to_class_name);
             // dbg!(&term_type);
 
             if ct.is_subtype(&term_type, to_class_name).unwrap() {
-                return Ok(to_class_name.clone())
+                return Ok(to_class_name.clone());
             }
             // T-DownCast
-            else if ct.is_subtype(to_class_name, &term_type).unwrap() && to_class_name != &term_type {
-                return Ok(to_class_name.clone())
+            else if ct.is_subtype(to_class_name, &term_type).unwrap()
+                && to_class_name != &term_type
+            {
+                return Ok(to_class_name.clone());
             }
             // T-SenselessCast
-            else if !ct.is_subtype(&term_type, to_class_name).unwrap() && !ct.is_subtype(to_class_name, &term_type).unwrap() {
-                println!("SENSELESS CAST WARNING: Term of type `{}` can not be cast to type `{}`", &term_type.0, &to_class_name.0);
-                return Ok(to_class_name.clone())
+            else if !ct.is_subtype(&term_type, to_class_name).unwrap()
+                && !ct.is_subtype(to_class_name, &term_type).unwrap()
+            {
+                println!(
+                    "SENSELESS CAST WARNING: Term of type `{}` can not be cast to type `{}`",
+                    &term_type, &to_class_name
+                );
+                return Ok(to_class_name.clone());
             }
             // cast fallthrough should not happen
             else {
-                bail!("No rule to cast term of type `{}` to type `{}`", &term_type.0, &to_class_name.0);
+                bail!(
+                    "No rule to cast term of type `{}` to type `{}`",
+                    &term_type,
+                    &to_class_name
+                );
             }
         }
     }
@@ -164,37 +178,36 @@ pub fn typecheck_method(
 ) -> Result<MethodOk> {
     let gamma = Gamma::from_class_method(in_class_name, method);
     let ret_term_type = typecheck_term(ct, &gamma, &method.return_term)?;
-    let super_type = ct.super_type(in_class_name).ok_or(anyhow!(
-        "Supertype of class `{}` not found",
-        &in_class_name.0
-    ))?;
+    let super_type = ct
+        .super_type(in_class_name)
+        .ok_or(anyhow!("Supertype of class `{}` not found", &in_class_name))?;
     let method_type = MethodType::from_method(method);
     if !ct
         .is_correct_method_override(&method.method_name, in_class_name, &method_type)
         .ok_or(anyhow!(
             "Method `{}` in class `{}` not found",
-            &method.method_name.0,
-            &in_class_name.0
+            &method.method_name,
+            &in_class_name
         ))?
     {
         bail!("Method `{}` in class `{}` does not override the method defined in the supertype correctly",
-            &method.method_name.0,
-            &in_class_name.0
+            &method.method_name,
+            &in_class_name
         );
     }
     if !ct
         .is_subtype(&ret_term_type, &method_type.ret_type)
         .ok_or(anyhow!(
             "Return type of method `{}` in class `{}` not found",
-            &method.method_name.0,
-            &in_class_name.0
+            &method.method_name,
+            &in_class_name
         ))?
     {
         bail!("type of returned term in method `{}` in class `{}` incorrect. Expected `{}`, actual `{}`.",
-            &method.method_name.0,
-            &in_class_name.0,
-            &method_type.ret_type.0,
-            &ret_term_type.0
+            &method.method_name,
+            &in_class_name,
+            &method_type.ret_type,
+            &ret_term_type
         );
     }
     Ok(MethodOk(in_class_name.clone()))
@@ -208,7 +221,7 @@ pub fn typecheck_class(ct: &ClassTable, class: &ClassDefinition) -> Result<Class
 
     let super_type = ct
         .super_type(&class.name)
-        .ok_or(anyhow!("Supertype of class `{}` not found", &class.name.0))?;
+        .ok_or(anyhow!("Supertype of class `{}` not found", &class.name))?;
     let super_fields = ct.fields(&super_type).unwrap();
 
     // TODO: check correct super() call
@@ -227,7 +240,7 @@ pub fn typecheck_ast(ct: &ClassTable, ast: &Ast) -> Result<()> {
         .iter()
         .map(|class| {
             typecheck_class(ct, class)
-                .context(anyhow!("Typechecking for class `{}` failed", &class.name.0))
+                .context(anyhow!("Typechecking for class `{}` failed", &class.name))
         })
         .map(|r| r.map(|_| ()))
         .collect()

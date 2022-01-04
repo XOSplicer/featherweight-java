@@ -90,13 +90,13 @@ pub fn eval_step(ct: &ClassTable, term: Term) -> Result<Term> {
                 // check that field in class
                 let (i, _) = ct
                     .fields(&nc.class_name)
-                    .ok_or(anyhow!("Class `{}` is not defined", &nc.class_name.0))?
+                    .ok_or(anyhow!("Class `{}` is not defined", &nc.class_name))?
                     .enumerate()
                     .find(|(_, (_, field_name))| field_name == &field)
                     .ok_or(anyhow!(
                         "Field `{}` not defined in class `{}`",
-                        &field.0,
-                        &nc.class_name.0
+                        &field,
+                        &nc.class_name
                     ))?;
                 Ok(*nc
                     .arg_terms
@@ -123,8 +123,8 @@ pub fn eval_step(ct: &ClassTable, term: Term) -> Result<Term> {
             {
                 let method_body = ct.method_body(&method_name, &nc.class_name).ok_or(anyhow!(
                     "Method `{}` in class `{}` not defined",
-                    &method_name.0,
-                    &nc.class_name.0
+                    &method_name,
+                    &nc.class_name
                 ))?;
                 let this_field = FieldName("this".into());
                 let replacements = iter::once((&this_field, nc.into_term()))
@@ -172,16 +172,16 @@ pub fn eval_step(ct: &ClassTable, term: Term) -> Result<Term> {
                     .is_subtype(&nc.class_name, &to_class_name)
                     .ok_or(anyhow!(
                         "Class `{}` or `{}` not defined",
-                        &nc.class_name.0,
-                        &to_class_name.0
+                        &nc.class_name,
+                        &to_class_name
                     ))?
                 {
                     Ok(nc.into_term())
                 } else {
                     bail!(
                         "Cast failed for class `{}` to `{}`",
-                        &nc.class_name.0,
-                        &to_class_name.0
+                        &nc.class_name,
+                        &to_class_name
                     );
                 }
             }
