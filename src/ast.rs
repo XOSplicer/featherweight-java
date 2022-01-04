@@ -77,6 +77,12 @@ impl FieldAccess {
     }
 }
 
+impl From<FieldAccess> for Term {
+    fn from(f: FieldAccess) -> Self {
+        f.into_term()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct MethodCall {
     pub object_term: Box<Term>,
@@ -87,6 +93,12 @@ pub struct MethodCall {
 impl MethodCall {
     pub fn into_term(self) -> Term {
         Term::MethodCall(self)
+    }
+}
+
+impl From<MethodCall> for Term {
+    fn from(f: MethodCall) -> Self {
+        f.into_term()
     }
 }
 
@@ -102,6 +114,12 @@ impl NewCall {
     }
 }
 
+impl From<NewCall> for Term {
+    fn from(f: NewCall) -> Self {
+        f.into_term()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Cast {
     pub to_class_name: ClassName,
@@ -111,6 +129,12 @@ pub struct Cast {
 impl Cast {
     pub fn into_term(self) -> Term {
         Term::Cast(self)
+    }
+}
+
+impl From<Cast> for Term {
+    fn from(f: Cast) -> Self {
+        f.into_term()
     }
 }
 
