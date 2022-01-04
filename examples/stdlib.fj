@@ -245,7 +245,7 @@ class Either extends Monad {
     Functor map(Function f) {
         return this.mapRight(f);
     }
-    Mondad flatMap(Function f) {
+    Monad flatMap(Function f) {
         return this;
     }
 }
@@ -288,7 +288,7 @@ class Right extends Either {
     Peano length() {
         return new Zero();
     }
-    Mondad flatMap(Function f) {
+    Monad flatMap(Function f) {
         return (Monad) f.apply(this.right);
     }
 }
@@ -588,6 +588,7 @@ class ConsMap extends Map {
     }
 
     Monad flatMap(Function f) {
-        return ((Map) f.apply(new Pair(this.key, this.value)).merge(this.tail.flatMap(f));
+        return ((Map) f.apply(new Pair(this.key, this.value)))
+            .merge((Map) this.tail.flatMap(f));
     }
 }
