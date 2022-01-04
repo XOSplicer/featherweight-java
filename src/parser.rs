@@ -1,5 +1,4 @@
 use crate::ast;
-use anyhow::Result;
 use pest::iterators::{Pair, Pairs};
 use pest::Parser;
 use pest_derive::Parser;
@@ -8,55 +7,56 @@ use pest_derive::Parser;
 #[grammar = "fj.pest"]
 pub struct FJParser;
 
-pub fn parse(input: &str) -> Result<ast::Ast> {
+type ParserError = pest::error::Error<Rule>;
+type ParserResult<T> = Result<T, ParserError>;
+
+pub fn parse(input: &str) -> ParserResult<ast::Ast> {
     let pairs = FJParser::parse(Rule::program, input)?;
-    parse_program(pairs)
+    Ok(parse_program(pairs))
 }
 
-pub fn parse_eval_input(input: &str) -> Result<ast::Term> {
+pub fn parse_eval_input(input: &str) -> ParserResult<ast::Term> {
     let pairs = FJParser::parse(Rule::eval_input_term, input)?;
-    parse_eval_input_term(pairs)
+    Ok(parse_eval_input_term(pairs))
 }
 
-fn parse_eval_input_term(mut pairs: Pairs<Rule>) -> Result<ast::Term> {
+fn parse_eval_input_term(mut pairs: Pairs<Rule>) -> ast::Term {
     // println!("parse_eval_input_term {:#?}", &pairs);
     let pair = pairs.next().unwrap();
     let term = parse_term(pair);
-    Ok(term)
+    term
 }
 
-// TODO: parse_* can ommit the usage of Result<_>
+// NOTE: parse_* can ommit the usage of Result<_>,
+// as is will always work, if the parser was ok
+// .unwrap() is acutally idiomatic here
 
-fn parse_program(pairs: Pairs<Rule>) -> Result<ast::Ast> {
+fn parse_program(pairs: Pairs<Rule>) -> ast::Ast {
     // println!("parse_program {:#?}", &pairs);
     let class_definitions = pairs
         .take_while(|pair| pair.as_rule() != Rule::EOI)
         .map(parse_class_definition)
-        .collect::<Result<Vec<_>>>()?;
-    Ok(ast::Ast { class_definitions })
+        .collect();
+    ast::Ast { class_definitions }
 }
 
-fn parse_class_definition(pair: Pair<Rule>) -> Result<ast::ClassDefinition> {
+fn parse_class_definition(pair: Pair<Rule>) -> ast::ClassDefinition {
     // println!("parse_class_definition {:#?}", &pair);
-    Ok(match pair.as_rule() {
+    match pair.as_rule() {
         Rule::class_definition => {
             let mut pairs = pair.into_inner();
             let name = pairs.next().unwrap().as_str();
             let super_type = pairs.next().unwrap().as_str();
 
-            let fields = {
-                pairs
-                    .clone()
-                    .take_while(|pair| pair.as_rule() == Rule::field_definition)
-                    .map(parse_field_definition)
-                    .collect::<Result<Vec<_>>>()?
-            };
+            let fields = pairs
+                .clone()
+                .take_while(|pair| pair.as_rule() == Rule::field_definition)
+                .map(parse_field_definition)
+                .collect();
             let mut pairs = pairs.skip_while(|pair| pair.as_rule() == Rule::field_definition);
             let ctor_pair = pairs.next().unwrap();
-            let constructor = parse_constructor(ctor_pair)?;
-            let methods = pairs
-                .map(parse_method_definition)
-                .collect::<Result<Vec<_>>>()?;
+            let constructor = parse_constructor(ctor_pair);
+            let methods = pairs.map(parse_method_definition).collect();
             ast::ClassDefinition {
                 name: ast::ClassName(name.into()),
                 super_type: ast::ClassName(super_type.into()),
@@ -66,12 +66,12 @@ fn parse_class_definition(pair: Pair<Rule>) -> Result<ast::ClassDefinition> {
             }
         }
         _ => unreachable!(),
-    })
+    }
 }
 
-fn parse_field_definition(pair: Pair<Rule>) -> Result<ast::ArgPair> {
+fn parse_field_definition(pair: Pair<Rule>) -> ast::ArgPair {
     // println!("parse_field_definition {:#?}", &pair);
-    Ok(match pair.as_rule() {
+    match pair.as_rule() {
         Rule::field_definition => {
             let mut pairs = pair.into_inner();
             let class_name = pairs.next().unwrap().as_str();
@@ -82,12 +82,12 @@ fn parse_field_definition(pair: Pair<Rule>) -> Result<ast::ArgPair> {
             )
         }
         _ => unreachable!(),
-    })
+    }
 }
 
-fn parse_constructor(pair: Pair<Rule>) -> Result<ast::Constructor> {
+fn parse_constructor(pair: Pair<Rule>) -> ast::Constructor {
     // println!("parse_constructor {:#?}", &pair);
-    Ok(match pair.as_rule() {
+    match pair.as_rule() {
         Rule::constructor => {
             let mut pairs = pair.into_inner();
             let name = pairs.next().unwrap().as_str();
@@ -95,19 +95,17 @@ fn parse_constructor(pair: Pair<Rule>) -> Result<ast::Constructor> {
                 .clone()
                 .find(|pair| pair.as_rule() == Rule::arg_list)
                 .map(parse_arg_list)
-                .transpose()?
                 .unwrap_or_default();
             let super_call = pairs
                 .clone()
                 .find(|pair| pair.as_rule() == Rule::field_list)
                 .map(parse_super_field_list)
-                .transpose()?
                 .unwrap_or_default();
             let assignments = pairs
                 .clone()
                 .filter(|pair| pair.as_rule() == Rule::assignment)
                 .map(parse_assignment)
-                .collect::<Result<Vec<_>>>()?;
+                .collect();
             ast::Constructor {
                 name: ast::ClassName(name.into()),
                 args,
@@ -116,12 +114,12 @@ fn parse_constructor(pair: Pair<Rule>) -> Result<ast::Constructor> {
             }
         }
         _ => unreachable!(),
-    })
+    }
 }
 
-fn parse_arg_list(pair: Pair<Rule>) -> Result<Vec<ast::ArgPair>> {
+fn parse_arg_list(pair: Pair<Rule>) -> Vec<ast::ArgPair> {
     // println!("parse_arg_list {:#?}", &pair);
-    Ok(match pair.as_rule() {
+    match pair.as_rule() {
         Rule::arg_list => {
             let mut pairs = pair.into_inner().peekable();
             let mut args = Vec::new();
@@ -134,12 +132,12 @@ fn parse_arg_list(pair: Pair<Rule>) -> Result<Vec<ast::ArgPair>> {
             args
         }
         _ => unreachable!(),
-    })
+    }
 }
 
-fn parse_super_field_list(pair: Pair<Rule>) -> Result<Vec<ast::FieldName>> {
+fn parse_super_field_list(pair: Pair<Rule>) -> Vec<ast::FieldName> {
     // println!("parse_super_field_list {:#?}", &pair);
-    Ok(match pair.as_rule() {
+    match pair.as_rule() {
         Rule::field_list => {
             let pairs = pair.into_inner();
             pairs
@@ -147,12 +145,12 @@ fn parse_super_field_list(pair: Pair<Rule>) -> Result<Vec<ast::FieldName>> {
                 .collect()
         }
         _ => unreachable!(),
-    })
+    }
 }
 
-fn parse_assignment(pair: Pair<Rule>) -> Result<(ast::FieldName, ast::FieldName)> {
+fn parse_assignment(pair: Pair<Rule>) -> (ast::FieldName, ast::FieldName) {
     // println!("parse_assignment {:#?}", &pair);
-    Ok(match pair.as_rule() {
+    match pair.as_rule() {
         Rule::assignment => {
             let mut pairs = pair.into_inner();
             (
@@ -161,12 +159,12 @@ fn parse_assignment(pair: Pair<Rule>) -> Result<(ast::FieldName, ast::FieldName)
             )
         }
         _ => unreachable!(),
-    })
+    }
 }
 
-fn parse_method_definition(pair: Pair<Rule>) -> Result<ast::MethodDefinition> {
+fn parse_method_definition(pair: Pair<Rule>) -> ast::MethodDefinition {
     // println!("parse_method_definition {:#?}", &pair);
-    Ok(match pair.as_rule() {
+    match pair.as_rule() {
         Rule::method_definition => {
             let mut pairs = pair.into_inner();
             let return_type = pairs.next().unwrap().as_str();
@@ -175,7 +173,6 @@ fn parse_method_definition(pair: Pair<Rule>) -> Result<ast::MethodDefinition> {
                 .clone()
                 .find(|pair| pair.as_rule() == Rule::arg_list)
                 .map(parse_arg_list)
-                .transpose()?
                 .unwrap_or_default();
             let return_term = pairs
                 .clone()
@@ -191,7 +188,7 @@ fn parse_method_definition(pair: Pair<Rule>) -> Result<ast::MethodDefinition> {
             }
         }
         _ => unreachable!(),
-    })
+    }
 }
 
 fn parse_term(pair: Pair<Rule>) -> ast::Term {

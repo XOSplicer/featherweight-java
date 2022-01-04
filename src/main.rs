@@ -10,6 +10,7 @@ mod class_table;
 mod evaluation;
 mod parser;
 mod typecheck;
+mod error;
 
 #[derive(structopt::StructOpt)]
 struct Args {
