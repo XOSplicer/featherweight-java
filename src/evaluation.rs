@@ -1,11 +1,9 @@
+use crate::error::EvalError;
 use crate::{ast::*, class_table::ClassTable};
-use anyhow::anyhow;
-use anyhow::bail;
-use anyhow::Result;
 use std::collections::BTreeMap;
 use std::iter;
 
-pub fn eval_full(ct: &ClassTable, term: Term) -> Result<Term> {
+pub fn eval_full(ct: &ClassTable, term: Term) -> Result<Term, EvalError> {
     let mut current = term;
     while !current.is_value() {
         println!("eval_full current term: {}", &current);
@@ -82,7 +80,7 @@ fn substitute_many(in_term: Term, replacements: BTreeMap<&FieldName, Term>) -> T
     current
 }
 
-pub fn eval_step(ct: &ClassTable, term: Term) -> Result<Term> {
+pub fn eval_step(ct: &ClassTable, term: Term) -> Result<Term, EvalError> {
     match term {
         Term::FieldAccess(FieldAccess { field, object_term }) => match *object_term {
             // E-ProjNew
@@ -90,18 +88,17 @@ pub fn eval_step(ct: &ClassTable, term: Term) -> Result<Term> {
                 // check that field in class
                 let (i, _) = ct
                     .fields(&nc.class_name)
-                    .ok_or(anyhow!("Class `{}` is not defined", &nc.class_name))?
+                    .ok_or(EvalError::UndefinedClass(nc.class_name.clone()))?
                     .enumerate()
                     .find(|(_, (_, field_name))| field_name == &field)
-                    .ok_or(anyhow!(
-                        "Field `{}` not defined in class `{}`",
-                        &field,
-                        &nc.class_name
+                    .ok_or(EvalError::UndefinedField(
+                        field.clone(),
+                        nc.class_name.clone(),
                     ))?;
                 Ok(*nc
                     .arg_terms
                     .get(i)
-                    .ok_or(anyhow!("Could not get contructor arg"))?
+                    .ok_or(EvalError::ConstructorArgNotFound(i, nc.class_name.clone()))?
                     .clone())
             }
             // E-Field
@@ -121,11 +118,9 @@ pub fn eval_step(ct: &ClassTable, term: Term) -> Result<Term> {
             Term::NewCall(nc)
                 if nc.has_only_value_args() && arg_terms.iter().all(|u| u.is_value()) =>
             {
-                let method_body = ct.method_body(&method_name, &nc.class_name).ok_or(anyhow!(
-                    "Method `{}` in class `{}` not defined",
-                    &method_name,
-                    &nc.class_name
-                ))?;
+                let method_body = ct.method_body(&method_name, &nc.class_name).ok_or(
+                    EvalError::UndefinedMethod(method_name.clone(), nc.class_name.clone()),
+                )?;
                 let this_field = FieldName("this".into());
                 let replacements = iter::once((&this_field, nc.into_term()))
                     .chain(
@@ -168,21 +163,15 @@ pub fn eval_step(ct: &ClassTable, term: Term) -> Result<Term> {
         }) => match *term {
             // E-CastNew
             Term::NewCall(nc) if nc.has_only_value_args() => {
-                if ct
-                    .is_subtype(&nc.class_name, &to_class_name)
-                    .ok_or(anyhow!(
-                        "Class `{}` or `{}` not defined",
-                        &nc.class_name,
-                        &to_class_name
-                    ))?
-                {
+                if ct.is_subtype(&nc.class_name, &to_class_name).ok_or(
+                    EvalError::UndefinedClasses(vec![nc.class_name.clone(), to_class_name.clone()]),
+                )? {
                     Ok(nc.into_term())
                 } else {
-                    bail!(
-                        "Cast failed for class `{}` to `{}`",
-                        &nc.class_name,
-                        &to_class_name
-                    );
+                    Err(EvalError::CastFailed {
+                        from: nc.class_name.clone(),
+                        to: to_class_name.clone(),
+                    })?
                 }
             }
             // E-Cast
@@ -213,9 +202,6 @@ pub fn eval_step(ct: &ClassTable, term: Term) -> Result<Term> {
             }
             .into_term())
         }
-        _ => bail!(
-            "Evaluation stuck, matching not implemented, term: {}",
-            &term
-        ),
+        _ => Err(EvalError::Stuck(term))?,
     }
 }

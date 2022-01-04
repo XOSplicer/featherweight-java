@@ -1,9 +1,8 @@
+use crate::ast::{ClassName, FieldName, MethodName, Term};
 use thiserror::Error;
-use crate::ast::{ClassName, MethodName};
 
 #[derive(Debug, Error)]
 pub enum ClassTableError {
-
     #[error("Classes may not be named `Object`.")]
     ClassNamedObject,
 
@@ -47,11 +46,35 @@ pub enum ClassTableError {
 #[derive(Debug, Error)]
 pub enum TypingError {
     #[error(transparent)]
-    Other(#[from] anyhow::Error)
+    Other(#[from] anyhow::Error),
 }
 
 #[derive(Debug, Error)]
 pub enum EvalError {
+    #[error(
+        "Could not cast class `{from}` to class `{to}`.
+        There is no subtyping relation between them."
+    )]
+    CastFailed { from: ClassName, to: ClassName },
+
+    #[error("Evaluation is stuck. Could not matching current term: `{0}`")]
+    Stuck(Term),
+
+    #[error("Class `{0}` not defined in class table")]
+    UndefinedClass(ClassName),
+
+    #[error("One or more of the following classes are not defined by the class table: {0:?}")]
+    UndefinedClasses(Vec<ClassName>),
+
+    #[error("Method `{0}` in class `{1}` not defined")]
+    UndefinedMethod(MethodName, ClassName),
+
+    #[error("Field `{0}` not defined in class `{1}`")]
+    UndefinedField(FieldName, ClassName),
+
+    #[error("Could not get constructor argument at position {0} in class `{1}`")]
+    ConstructorArgNotFound(usize, ClassName),
+
     #[error(transparent)]
-    Other(#[from] anyhow::Error)
+    Other(#[from] anyhow::Error),
 }
