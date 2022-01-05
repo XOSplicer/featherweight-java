@@ -42,7 +42,7 @@ fn main(args: Args) -> anyhow::Result<()> {
     println!("Subtypes of object: {:?}", &subtypes_of_object);
 
     let tree = class_tree::ClassTree::new(&ct);
-    println!("CLASS TREE: {:#?}", &tree);
+    println!("CLASS TREE:\n {}", &tree);
 
     let input = std::fs::read_to_string(args.fj_expression_file).context("could not read file")?;
     let term = parser::parse_eval_input(&input).context("parsing failed")?;
