@@ -8,6 +8,7 @@ use typecheck::{typecheck_ast, typecheck_term, Gamma};
 
 mod ast;
 mod class_table;
+mod class_tree;
 mod error;
 mod evaluation;
 mod parser;
@@ -39,6 +40,9 @@ fn main(args: Args) -> anyhow::Result<()> {
         .cloned()
         .collect::<Vec<_>>();
     println!("Subtypes of object: {:?}", &subtypes_of_object);
+
+    let tree = class_tree::ClassTree::new(&ct);
+    println!("CLASS TREE: {:#?}", &tree);
 
     let input = std::fs::read_to_string(args.fj_expression_file).context("could not read file")?;
     let term = parser::parse_eval_input(&input).context("parsing failed")?;

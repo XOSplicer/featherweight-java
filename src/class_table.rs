@@ -149,6 +149,21 @@ impl ClassTable {
         )
     }
 
+    pub fn direct_subtypes<'a>(
+        &'a self,
+        class_name: &'a ClassName,
+    ) -> Option<impl Iterator<Item = &'a ClassName>> {
+        if !(self.contains_class(class_name)) {
+            return None;
+        }
+        Some(
+            self.inner()
+                .values()
+                .filter(move |&c| &c.super_type == class_name && &c.name != class_name)
+                .map(|c| &c.name),
+        )
+    }
+
     pub fn fields(
         &self,
         class_name: &ClassName,
